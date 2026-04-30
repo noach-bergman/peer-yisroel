@@ -1,0 +1,66 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "gallery": "Gallery",
+    "donate": "Donate",
+    "contact": "Contact"
+  },
+  "hero": {
+    "title": "Yeshivat Peer Yisroel",
+    "subtitle": "Named after the Holy Rebbe R' Yisrael of Stolin ZT\"L",
+    "cta_donate": "Donate Now",
+    "cta_about": "About the Yeshiva"
+  },
+  "stats": {
+    "students": "Students",
+    "years": "Years of Excellence",
+    "daily": "Daily Classes"
+  },
+  "mission": {
+    "title": "Our Mission",
+    "subtitle": "Torah, Fear of Heaven & Fine Character",
+    "text": "Yeshivat Peer Yisroel, named after the Holy Rebbe R' Yisrael of Stolin ZT\"L, is dedicated to raising a generation of Torah scholars who illuminate the Land of Israel with Torah and light. The yeshiva welcomes talented students from former CIS countries who aspire to grow in Torah."
+  },
+  "about": {
+    "title": "About the Yeshiva",
+    "history_title": "History",
+    "mission_title": "Mission",
+    "leadership_title": "Leadership"
+  },
+  "gallery": {
+    "title": "Gallery",
+    "subtitle": "Moments from Yeshiva Life"
+  },
+  "donate": {
+    "title": "Support the Yeshiva",
+    "subtitle": "Partner in Building a Beit Midrash",
+    "online_title": "Online Donation",
+    "bank_title": "Bank Transfer",
+    "why_title": "Why Donate?",
+    "impact": "Every donation helps raise a generation of Torah scholars",
+    "btn": "Donate Now"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "We'd love to hear from you",
+    "name": "Name",
+    "email": "Email",
+    "message": "Message",
+    "send": "Send Message",
+    "success": "Message sent successfully! We'll get back to you soon.",
+    "address_title": "Address",
+    "email_title": "Email",
+    "phone_title": "Phone"
+  },
+  "footer": {
+    "rights": "All Rights Reserved",
+    "links": "Quick Links"
+  },
+  "get_involved": {
+    "title": "Get Involved",
+    "text": "Support the Yeshiva and help raise a generation of Torah scholars",
+    "btn_donate": "Donate",
+    "btn_contact": "Contact Us"
+  }
+}
