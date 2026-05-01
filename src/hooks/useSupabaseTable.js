@@ -16,7 +16,8 @@ export function useSupabaseTable(table, options = {}) {
       })
       .catch(() => { if (!cancelled) setLoading(false) })
 
-    const sub = supabase.channel(`${table}_changes`)
+    const channelName = `${table}_changes_${Date.now()}_${Math.random()}`
+    const sub = supabase.channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
         supabase.from(table).select('*').order(orderBy, { ascending })
           .then(({ data: rows }) => { if (!cancelled) setData(rows || []) })
@@ -40,7 +41,7 @@ export function useSupabaseRow(table, column, value) {
     if (!value || !supabaseConfigured || !supabase) return
     let cancelled = false
     setLoading(true)
-    supabase.from(table).select('*').eq(column, value).single()
+    supabase.from(table).select('*').eq(column, value).maybeSingle()
       .then(({ data: row }) => { if (!cancelled) { setData(row); setLoading(false) } })
       .catch(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }

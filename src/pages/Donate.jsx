@@ -6,6 +6,7 @@ import Card from '../components/Card'
 import CountUp from '../components/CountUp'
 import EditableText from '../components/EditableText'
 import GoldParticles from '../components/GoldParticles'
+import PageHero from '../components/PageHero'
 import PageLoading from '../components/PageLoading'
 import { createId } from '../content/defaultContent'
 import { useEditMode } from '../contexts/EditModeContext'
@@ -24,16 +25,18 @@ export default function Donate() {
   const donationUrl = settings.donation_url || '#'
 
   return (
-    <div className="page-shell">
+    <div>
+      <PageHero>
+        <EditableText field={`title_${lang}`} tag="h1" className="text-4xl md:text-6xl font-bold text-white font-hebrew leading-tight mb-4 drop-shadow-lg block">
+          {content[`title_${lang}`]}
+        </EditableText>
+        <div className="w-20 h-1 bg-brand-gold mx-auto rounded-full mb-4" />
+        <EditableText field={`subtitle_${lang}`} tag="p" className="text-white/80 text-lg md:text-xl block">
+          {content[`subtitle_${lang}`]}
+        </EditableText>
+      </PageHero>
+      <div className="py-16">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <AnimatedSection className="text-center mb-12" variant="fadeUp">
-          <EditableText field={`title_${lang}`} tag="h1" className="heading-page mb-4 block">
-            {content[`title_${lang}`]}
-          </EditableText>
-          <EditableText field={`subtitle_${lang}`} tag="p" className="text-xl text-gray-600 block">
-            {content[`subtitle_${lang}`]}
-          </EditableText>
-        </AnimatedSection>
 
         <AnimatedSection delay={0.05} variant="scaleIn">
           <Card className="mb-10 text-center">
@@ -141,6 +144,7 @@ export default function Donate() {
             </Card>
           </div>
         </AnimatedSection>
+      </div>
       </div>
     </div>
   )

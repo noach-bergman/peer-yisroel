@@ -31,9 +31,13 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-3">
           <div>
-            <EditableText scope="global" field={`brand_name_${lang}`} tag="h3" className="mb-3 text-xl font-bold text-white font-hebrew">
-              {content[`brand_name_${lang}`]}
-            </EditableText>
+            <div className="mb-4 inline-block bg-white rounded-xl shadow-sm p-2">
+              <img
+                src={lang === 'he' ? '/עברית.jpeg' : '/English.png'}
+                alt={lang === 'he' ? 'פאר ישראל' : "Pe'er Yisroel"}
+                className="h-20 w-auto object-contain"
+              />
+            </div>
             <EditableText scope="global" field={`brand_subtitle_${lang}`} tag="p" className="text-sm leading-relaxed text-white/70" multiline>
               {content[`brand_subtitle_${lang}`]}
             </EditableText>

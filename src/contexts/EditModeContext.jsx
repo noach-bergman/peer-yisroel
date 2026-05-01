@@ -23,6 +23,7 @@ const EditModeContext = createContext({
   settings: DEFAULT_SETTINGS,
   gallery: [],
   slides: [],
+  categories: [],
   loading: false,
   saving: false,
   isDirty: false,
@@ -46,6 +47,10 @@ const EditModeContext = createContext({
   updateMediaItem: () => {},
   removeMediaItem: () => {},
   moveMediaItem: () => {},
+  addCategory: () => {},
+  updateCategory: () => {},
+  removeCategory: () => {},
+  moveCategory: () => {},
 })
 
 function stableJson(value) {
@@ -81,7 +86,19 @@ function normalizeMediaRows(rows, type) {
     order_index: row.order_index ?? index,
     alt_he: row.alt_he || '',
     alt_en: row.alt_en || '',
+    category_he: row.category_he || '',
+    category_en: row.category_en || '',
+    category_id: row.category_id || null,
     _state: 'clean',
+  }))
+}
+
+function normalizeCategories(rows) {
+  return rows.map((row, index) => ({
+    id: row.id,
+    name_he: row.name_he || '',
+    name_en: row.name_en || '',
+    order_index: row.order_index ?? index,
   }))
 }
 
@@ -116,6 +133,7 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [gallery, setGallery] = useState([])
   const [slides, setSlides] = useState([])
+  const [categories, setCategories] = useState([])
   const [savedSnapshot, setSavedSnapshot] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -138,12 +156,13 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
       setLoading(true)
       setError(null)
       try {
-        const [pageRow, globalRow, settingsRow, galleryRows, slideRows] = await Promise.all([
+        const [pageRow, globalRow, settingsRow, galleryRows, slideRows, categoryRows] = await Promise.all([
           fetchContentRow(pageKey),
           fetchContentRow('global'),
           fetchContentRow('settings'),
           fetchTable('gallery', 'order_index', true),
           fetchTable('hero_slideshow', 'order_index', true).catch(() => fetchTable('hero_slideshow', 'created_at', false)),
+          fetchTable('gallery_categories', 'order_index', true).catch(() => []),
         ])
         if (cancelled) return
         const nextPageContent = safeContent(pageRow, pageKey)
@@ -151,17 +170,20 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
         const nextSettings = normalizeSettings(settingsRow)
         const nextGallery = normalizeMediaRows(galleryRows, 'gallery')
         const nextSlides = normalizeMediaRows(slideRows, 'slide')
+        const nextCategories = normalizeCategories(categoryRows)
         setPageContent(nextPageContent)
         setGlobalContent(nextGlobalContent)
         setSettings(nextSettings)
         setGallery(nextGallery)
         setSlides(nextSlides)
+        setCategories(nextCategories)
         setSavedSnapshot({
           pageContent: nextPageContent,
           globalContent: nextGlobalContent,
           settings: nextSettings,
           gallery: nextGallery,
           slides: nextSlides,
+          categories: nextCategories,
         })
       } catch (err) {
         if (!cancelled) setError(err.message)
@@ -179,7 +201,8 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
     settings,
     gallery,
     slides,
-  }), [pageContent, globalContent, settings, gallery, slides])
+    categories,
+  }), [pageContent, globalContent, settings, gallery, slides, categories])
 
   const isDirty = savedSnapshot ? stableJson(currentSnapshot) !== stableJson(savedSnapshot) : false
 
@@ -273,6 +296,45 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
 
   const closeDrawer = useCallback(() => setDrawer(null), [])
 
+  // Category CRUD
+  const addCategory = useCallback(() => {
+    const item = {
+      id: `temp-${createId('category')}`,
+      name_he: '',
+      name_en: '',
+      order_index: categories.length,
+      _state: 'new',
+    }
+    setCategories((prev) => [...prev, item])
+    return item
+  }, [categories.length])
+
+  const updateCategory = useCallback((id, patch) => {
+    setCategories((prev) => prev.map((cat) => (
+      cat.id === id ? { ...cat, ...patch, _state: cat._state === 'new' ? 'new' : 'dirty' } : cat
+    )))
+  }, [])
+
+  const removeCategory = useCallback((id) => {
+    if (!window.confirm('Delete this category? Images in this category will become uncategorized.')) return
+    setCategories((prev) => withOrder(prev.filter((cat) => cat.id !== id)))
+    // Clear category_id from gallery images that referenced this category
+    setGallery((prev) => prev.map((img) => (
+      img.category_id === id ? { ...img, category_id: null, _state: img._state === 'new' ? 'new' : 'dirty' } : img
+    )))
+  }, [])
+
+  const moveCategory = useCallback((id, direction) => {
+    setCategories((prev) => {
+      const next = [...prev]
+      const index = next.findIndex((cat) => cat.id === id)
+      const swap = index + direction
+      if (index < 0 || swap < 0 || swap >= next.length) return prev
+      ;[next[index], next[swap]] = [next[swap], next[index]]
+      return withOrder(next).map((cat) => ({ ...cat, _state: cat._state === 'new' ? 'new' : 'dirty' }))
+    })
+  }, [])
+
   const addMediaFile = useCallback((table, file) => {
     const message = validateImageFile(file)
     if (message) {
@@ -286,6 +348,9 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
       file,
       alt_he: '',
       alt_en: '',
+      category_he: '',
+      category_en: '',
+      category_id: null,
       order_index: table === 'gallery' ? gallery.length : slides.length,
       _state: 'new',
     }
@@ -352,6 +417,9 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
           order_index: index,
           alt_he: item.alt_he || '',
           alt_en: item.alt_en || '',
+          category_he: item.category_he || '',
+          category_en: item.category_en || '',
+          category_id: item.category_id || null,
         })
         if (error) throw error
       } else if (item._state === 'dirty' || savedById.get(item.id)?.order_index !== index) {
@@ -359,10 +427,55 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
           order_index: index,
           alt_he: item.alt_he || '',
           alt_en: item.alt_en || '',
+          category_he: item.category_he || '',
+          category_en: item.category_en || '',
+          category_id: item.category_id || null,
         }).eq('id', item.id)
         if (error) throw error
       }
     }
+  }, [])
+
+  // Returns a map of tempId -> realId for newly inserted categories
+  const syncCategories = useCallback(async (currentCategories, savedCategories) => {
+    const idMap = {}
+    const currentRealIds = new Set(
+      currentCategories.filter((c) => !String(c.id).startsWith('temp-')).map((c) => c.id)
+    )
+
+    // Delete removed
+    for (const cat of savedCategories) {
+      if (!String(cat.id).startsWith('temp-') && !currentRealIds.has(cat.id)) {
+        await supabase.from('gallery_categories').delete().eq('id', cat.id)
+      }
+    }
+
+    // Insert new / update dirty
+    for (let i = 0; i < currentCategories.length; i += 1) {
+      const cat = currentCategories[i]
+      if (String(cat.id).startsWith('temp-')) {
+        const { data, error } = await supabase.from('gallery_categories').insert({
+          name_he: cat.name_he,
+          name_en: cat.name_en,
+          order_index: i,
+        }).select().single()
+        if (error) throw error
+        idMap[cat.id] = data.id
+      } else {
+        const savedCat = savedCategories.find((c) => c.id === cat.id)
+        const orderChanged = savedCat?.order_index !== i
+        if (cat._state === 'dirty' || orderChanged) {
+          const { error } = await supabase.from('gallery_categories').update({
+            name_he: cat.name_he,
+            name_en: cat.name_en,
+            order_index: i,
+          }).eq('id', cat.id)
+          if (error) throw error
+        }
+      }
+    }
+
+    return idMap
   }, [])
 
   const saveAll = useCallback(async () => {
@@ -394,32 +507,47 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
       const { error: settingsError } = await supabase.from('site_content').upsert(settingsPayload, { onConflict: 'key' })
       if (settingsError) throw settingsError
 
-      await syncMediaTable('gallery', gallery, savedSnapshot?.gallery || [], 'gallery')
+      // Save categories first — returns tempId→realId map
+      const categoryIdMap = await syncCategories(categories, savedSnapshot?.categories || [])
+
+      // Resolve any temp category IDs in gallery items before syncing
+      const resolvedGallery = Object.keys(categoryIdMap).length
+        ? gallery.map((img) => ({
+            ...img,
+            category_id: categoryIdMap[img.category_id] ?? img.category_id,
+          }))
+        : gallery
+
+      await syncMediaTable('gallery', resolvedGallery, savedSnapshot?.gallery || [], 'gallery')
       await syncMediaTable('hero_slideshow', slides, savedSnapshot?.slides || [], 'slideshow')
 
-      const [pageRow, globalRow, settingsRow, galleryRows, slideRows] = await Promise.all([
+      const [pageRow, globalRow, settingsRow, galleryRows, slideRows, categoryRows] = await Promise.all([
         fetchContentRow(pageKey),
         fetchContentRow('global'),
         fetchContentRow('settings'),
         fetchTable('gallery', 'order_index', true),
         fetchTable('hero_slideshow', 'order_index', true).catch(() => fetchTable('hero_slideshow', 'created_at', false)),
+        fetchTable('gallery_categories', 'order_index', true).catch(() => []),
       ])
       const nextPageContent = safeContent(pageRow, pageKey)
       const nextGlobalContent = normalizeGlobalContent(globalRow)
       const nextSettings = normalizeSettings(settingsRow)
       const nextGallery = normalizeMediaRows(galleryRows, 'gallery')
       const nextSlides = normalizeMediaRows(slideRows, 'slide')
+      const nextCategories = normalizeCategories(categoryRows)
       setPageContent(nextPageContent)
       setGlobalContent(nextGlobalContent)
       setSettings(nextSettings)
       setGallery(nextGallery)
       setSlides(nextSlides)
+      setCategories(nextCategories)
       setSavedSnapshot({
         pageContent: nextPageContent,
         globalContent: nextGlobalContent,
         settings: nextSettings,
         gallery: nextGallery,
         slides: nextSlides,
+        categories: nextCategories,
       })
       setToast({ message: 'Changes saved.' })
     } catch (err) {
@@ -428,7 +556,7 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
     } finally {
       setSaving(false)
     }
-  }, [editLanguage, gallery, globalContent, pageContent, pageKey, savedSnapshot, settings, slides, syncMediaTable])
+  }, [editLanguage, gallery, globalContent, pageContent, pageKey, savedSnapshot, settings, slides, categories, syncMediaTable, syncCategories])
 
   const discard = useCallback(() => {
     if (!savedSnapshot) return
@@ -437,6 +565,7 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
     setSettings(savedSnapshot.settings)
     setGallery(savedSnapshot.gallery)
     setSlides(savedSnapshot.slides)
+    setCategories(savedSnapshot.categories || [])
     setDrawer(null)
     setToast({ message: 'Changes discarded.' })
   }, [savedSnapshot])
@@ -466,6 +595,7 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
     settings,
     gallery,
     slides,
+    categories,
     loading,
     saving,
     isDirty,
@@ -490,9 +620,14 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
     updateMediaItem,
     removeMediaItem,
     moveMediaItem,
+    addCategory,
+    updateCategory,
+    removeCategory,
+    moveCategory,
   }), [
     addCollectionItem,
     addMediaFile,
+    addCategory,
     closeDrawer,
     discard,
     drawer,
@@ -507,20 +642,24 @@ export function EditModeProvider({ children, pageKey, language = 'he', onLanguag
     loading,
     moveCollectionItem,
     moveMediaItem,
+    moveCategory,
     openDrawer,
     pageContent,
     pageKey,
     removeCollectionItem,
     removeMediaItem,
+    removeCategory,
     saveAll,
     saving,
     setEditLanguage,
     settings,
     slides,
+    categories,
     toast,
     updateCollectionItem,
     updateField,
     updateMediaItem,
+    updateCategory,
   ])
 
   return (

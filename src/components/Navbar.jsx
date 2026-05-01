@@ -60,14 +60,14 @@ export default function Navbar() {
     : location.pathname === '/'
       ? 'home'
       : location.pathname.split('/')[1]
-  const hasDarkHero = pageKey === 'home' || pageKey === 'about'
+  const hasDarkHero = ['home', 'about', 'gallery', 'donate', 'contact'].includes(pageKey)
   const darkNav = scrolled || open
   const heroTop = !darkNav && hasDarkHero
   const onDarkSurface = darkNav || heroTop
   const headerClass = darkNav
     ? 'bg-brand-primary shadow-lg'
     : heroTop
-      ? 'bg-transparent'
+      ? 'bg-brand-primary/80 backdrop-blur-sm shadow-md'
       : 'bg-white/95 shadow-md backdrop-blur'
   const brandClass = onDarkSurface ? 'text-white' : 'text-brand-primary'
   const activeLinkClass = onDarkSurface ? 'bg-white/20 text-white' : 'bg-brand-primary/10 text-brand-primary'
@@ -81,10 +81,13 @@ export default function Navbar() {
     <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${headerClass}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between md:h-20">
-          <Link to={toPath('/')} className="flex items-center gap-2">
-            <EditableText scope="global" field={`brand_short_${lang}`} inlineEditable={false} className={`text-xl font-bold tracking-wide font-hebrew md:text-2xl ${brandClass}`}>
-              {content[`brand_short_${lang}`]}
-            </EditableText>
+          <Link to={toPath('/')} className="flex items-center">
+            <img
+              key={lang}
+              src={lang === 'he' ? '/עברית.jpeg' : '/English.png'}
+              alt={lang === 'he' ? 'פאר ישראל' : "Pe'er Yisroel"}
+              className="h-12 md:h-14 w-auto object-contain"
+            />
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">

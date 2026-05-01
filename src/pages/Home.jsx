@@ -134,16 +134,13 @@ export default function Home() {
   return (
     <div>
       <div ref={heroRef} className="relative overflow-hidden">
-        <HeroSlideshow>
+        <HeroSlideshow logo="/English.png">
           <motion.div
             style={{ y: heroTextY }}
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
           >
-            <EditableText field={`hero_title_${lang}`} tag="h1" className="text-4xl md:text-7xl font-bold mb-4 font-hebrew leading-tight text-white drop-shadow-lg block">
-              {content[`hero_title_${lang}`]}
-            </EditableText>
             <EditableText field={`hero_subtitle_${lang}`} tag="p" className="text-lg md:text-2xl mb-8 text-white/90 leading-relaxed block">
               {content[`hero_subtitle_${lang}`]}
             </EditableText>

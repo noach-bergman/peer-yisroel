@@ -5,6 +5,7 @@ import AnimatedSection from '../components/AnimatedSection'
 import Button from '../components/Button'
 import Card from '../components/Card'
 import EditableText from '../components/EditableText'
+import PageHero from '../components/PageHero'
 import PageLoading from '../components/PageLoading'
 import { usePageContent, usePageSeo, useSettingsContent } from '../hooks/useEditableContent'
 
@@ -24,16 +25,18 @@ export default function Contact() {
   const subject = settings[`contact_form_subject_${lang}`] || settings.contact_form_subject_he
 
   return (
-    <div className="page-shell">
+    <div>
+      <PageHero>
+        <EditableText field={`title_${lang}`} tag="h1" className="text-4xl md:text-6xl font-bold text-white font-hebrew leading-tight mb-4 drop-shadow-lg block">
+          {content[`title_${lang}`]}
+        </EditableText>
+        <div className="w-20 h-1 bg-brand-gold mx-auto rounded-full mb-4" />
+        <EditableText field={`subtitle_${lang}`} tag="p" className="text-white/80 text-lg md:text-xl block">
+          {content[`subtitle_${lang}`]}
+        </EditableText>
+      </PageHero>
+      <div className="py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <AnimatedSection className="text-center mb-12">
-          <EditableText field={`title_${lang}`} tag="h1" className="heading-page mb-3 block">
-            {content[`title_${lang}`]}
-          </EditableText>
-          <EditableText field={`subtitle_${lang}`} tag="p" className="text-xl text-gray-600 block">
-            {content[`subtitle_${lang}`]}
-          </EditableText>
-        </AnimatedSection>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <AnimatedSection delay={0.05} variant="slideRight">
@@ -146,6 +149,7 @@ export default function Contact() {
             </AnimatedSection>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

@@ -43,6 +43,13 @@ export function useEditableTable(table, options) {
   return result
 }
 
+export function useGalleryCategories() {
+  const edit = useEditMode()
+  const result = useSupabaseTable('gallery_categories', { orderBy: 'order_index', ascending: true })
+  if (edit.isEditMode) return { categories: edit.categories, loading: edit.loading }
+  return { categories: result.data, loading: result.loading }
+}
+
 export function usePageSeo(pageKey, content, lang) {
   useEffect(() => {
     const title = content?.[`seo_title_${lang}`] || content?.[`title_${lang}`]

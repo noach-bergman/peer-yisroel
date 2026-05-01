@@ -1,10 +1,11 @@
+import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useEditMode } from '../contexts/EditModeContext'
 import { useEditableTable } from '../hooks/useEditableContent'
 import AdminItemControls from './AdminItemControls'
 
-export default function HeroSlideshow({ children }) {
+export default function HeroSlideshow({ children, logo }) {
   const { i18n } = useTranslation()
   const { data: slides, loading } = useEditableTable('hero_slideshow', { orderBy: 'created_at', ascending: false })
   const edit = useEditMode()
@@ -39,11 +40,16 @@ export default function HeroSlideshow({ children }) {
 
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden">
-      {loading ? (
-        <div className="absolute inset-0 bg-brand-primary" />
-      ) : slides.length > 0
-        ? (
-          <div dir="ltr" className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 bg-brand-primary" />
+
+      {!loading && slides.length > 0 && (
+        <motion.div
+          dir="ltr"
+          className="absolute inset-0 overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, ease: 'easeInOut' }}
+        >
             <div
               className="flex h-full transition-transform duration-1000 ease-in-out"
               style={{
@@ -54,10 +60,10 @@ export default function HeroSlideshow({ children }) {
               {slides.map((slide, index) => (
                 <div
                   key={slide.id}
-                  className="relative h-full flex-shrink-0 flex items-center justify-center bg-black"
+                  className="relative h-full flex-shrink-0 flex items-center justify-center bg-brand-primary"
                   style={{ width: `${100 / slides.length}%` }}
                 >
-                  <img src={slide.image_url} alt={slide[`alt_${lang}`] || ''} className="w-full h-full object-contain" />
+                  <img src={slide.image_url} alt={slide[`alt_${lang}`] || ''} className="w-full h-full object-cover" />
                   <AdminItemControls
                     label="Slide"
                     onEdit={() => edit.openDrawer({
@@ -80,14 +86,8 @@ export default function HeroSlideshow({ children }) {
                 </div>
               ))}
             </div>
-          </div>
-        )
-        : (
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ background: 'linear-gradient(135deg, #2c5f7a 0%, #3d7a9a 50%, #1e4257 100%)' }}
-          />
-        )}
+        </motion.div>
+      )}
 
       {edit.isEditMode && !edit.isPreviewMode && slides.length === 0 && (
         <button
@@ -100,8 +100,27 @@ export default function HeroSlideshow({ children }) {
       )}
       <input ref={fileRef} type="file" accept="image/*" onChange={addSlide} className="hidden" />
 
-      <div className="absolute inset-0 z-[1] bg-black/45 pointer-events-none" />
-      <div className="absolute inset-0 z-[1] bg-brand-primary/20 pointer-events-none" />
+
+      {logo && !loading && (
+        <div className="absolute inset-0 z-[5] flex items-center justify-center pointer-events-none">
+          <motion.img
+            src={logo}
+            alt=""
+            className="w-2/5 max-w-md object-contain"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{
+              opacity: [0, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0],
+              scale: [0.9, 1.0, 1.12, 1.0, 1.12, 1.0, 1.12, 1.0, 0.95],
+            }}
+            transition={{
+              delay: 0.8,
+              duration: 6,
+              times: [0, 0.15, 0.22, 0.35, 0.42, 0.55, 0.62, 0.75, 1],
+              ease: 'easeInOut',
+            }}
+          />
+        </div>
+      )}
 
       {slides.length > 1 && (
         <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 gap-2">
@@ -116,7 +135,7 @@ export default function HeroSlideshow({ children }) {
         </div>
       )}
 
-      <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
+      <div className="absolute bottom-16 inset-x-0 z-10 text-center text-white px-4">
         {children}
       </div>
     </section>
