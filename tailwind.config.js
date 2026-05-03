@@ -5,16 +5,16 @@ export default {
     extend: {
       colors: {
         brand: {
-          primary: '#2c5f7a',
-          'primary-light': '#3d7a9a',
-          'primary-dark': '#1e4257',
-          cream: '#e8d8b5',
-          'cream-dark': '#d4c49a',
-          gold: '#b8943f',
-          'gold-hover': '#a07c2d',
+          primary: '#1C3A6E',
+          'primary-light': '#2B5499',
+          'primary-dark': '#0F2248',
+          cream: '#E5D5A5',
+          'cream-dark': '#CFBD90',
+          gold: '#C49A30',
+          'gold-hover': '#A87B20',
           neutral: {
-            50: '#f8f5ee',
-            100: '#f0ead7',
+            50: '#F2E8D8',
+            100: '#EAE0CB',
           },
         },
       },

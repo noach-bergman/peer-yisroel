@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { BookOpen, Star, Users } from 'lucide-react'
 import AnimatedSection from '../components/AnimatedSection'
@@ -10,11 +10,29 @@ import EditableText from '../components/EditableText'
 import GoldParticles from '../components/GoldParticles'
 import HeroSlideshow from '../components/HeroSlideshow'
 import PageLoading from '../components/PageLoading'
+import { TextEffect } from '../components/ui/text-effect'
 import { buildAdminPathFromPublicPath } from '../content/defaultContent'
 import { useEditMode } from '../contexts/EditModeContext'
 import { useEditableTable, usePageContent, usePageSeo } from '../hooks/useEditableContent'
 
 const ICONS = { BookOpen, Users, Star }
+
+function AnimText({ field, tag = 'p', className = '', multiline = false, per = 'word', preset = 'fade', delay = 0, scrollTrigger = true, children }) {
+  const edit = useEditMode()
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-60px 0px' })
+
+  if (edit.isEditMode) {
+    return <EditableText field={field} tag={tag} className={`${className} block`} multiline={multiline}>{children}</EditableText>
+  }
+  return (
+    <div ref={ref}>
+      <TextEffect as={tag} per={per} preset={preset} delay={delay} trigger={scrollTrigger ? inView : true} className={className}>
+        {String(children ?? '')}
+      </TextEffect>
+    </div>
+  )
+}
 const CARD_VARIANTS = ['slideRight', 'scaleIn', 'slideLeft']
 
 function smartPath(path, edit) {
@@ -141,9 +159,9 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
           >
-            <EditableText field={`hero_subtitle_${lang}`} tag="p" className="text-lg md:text-2xl mb-8 text-white/90 leading-relaxed block">
+            <AnimText field={`hero_subtitle_${lang}`} tag="p" per="word" preset="slide" delay={0.2} scrollTrigger={false} className="text-lg md:text-2xl mb-8 text-white/90 leading-relaxed">
               {content[`hero_subtitle_${lang}`]}
-            </EditableText>
+            </AnimText>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link to={smartPath('/donate', edit)} className="btn-primary text-lg px-8 py-3">
                 <EditableText field={`hero_cta_donate_${lang}`}>{content[`hero_cta_donate_${lang}`]}</EditableText>
@@ -170,15 +188,15 @@ export default function Home() {
       <section className="section-y bg-brand-neutral-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <AnimatedSection variant="fadeUp">
-            <EditableText field={`mission_title_${lang}`} tag="h2" className="heading-section mb-3 block">
+            <AnimText field={`mission_title_${lang}`} tag="h2" per="word" preset="blur" className="heading-section mb-3">
               {content[`mission_title_${lang}`]}
-            </EditableText>
-            <EditableText field={`mission_subtitle_${lang}`} tag="h3" className="text-xl md:text-2xl font-semibold text-brand-primary-light mb-6 block">
+            </AnimText>
+            <AnimText field={`mission_subtitle_${lang}`} tag="h3" per="word" preset="slide" delay={0.1} className="text-xl md:text-2xl font-semibold text-brand-primary-light mb-6">
               {content[`mission_subtitle_${lang}`]}
-            </EditableText>
-            <EditableText field={`mission_text_${lang}`} tag="p" className="text-lg text-gray-700 leading-relaxed block" multiline>
+            </AnimText>
+            <AnimText field={`mission_text_${lang}`} tag="p" per="word" preset="fade" delay={0.2} multiline className="text-lg text-gray-700 leading-relaxed">
               {content[`mission_text_${lang}`]}
-            </EditableText>
+            </AnimText>
           </AnimatedSection>
 
           <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -206,12 +224,12 @@ export default function Home() {
         <section className="section-y bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <AnimatedSection className="text-center mb-10" variant="fadeIn">
-              <EditableText field={`gallery_title_${lang}`} tag="h2" className="heading-section block">
+              <AnimText field={`gallery_title_${lang}`} tag="h2" per="word" preset="blur" className="heading-section">
                 {content[`gallery_title_${lang}`]}
-              </EditableText>
-              <EditableText field={`gallery_subtitle_${lang}`} tag="p" className="text-gray-600 mt-2 block">
+              </AnimText>
+              <AnimText field={`gallery_subtitle_${lang}`} tag="p" per="word" preset="fade" delay={0.15} className="text-gray-600 mt-2">
                 {content[`gallery_subtitle_${lang}`]}
-              </EditableText>
+              </AnimText>
             </AnimatedSection>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {featured.map((item, index) => (
@@ -235,12 +253,12 @@ export default function Home() {
         <GoldParticles />
         <div className="relative z-10 max-w-2xl mx-auto px-4 text-center">
           <AnimatedSection variant="fadeUp">
-            <EditableText field={`cta_title_${lang}`} tag="h2" className="heading-section text-white mb-4 block">
+            <AnimText field={`cta_title_${lang}`} tag="h2" per="word" preset="slide" className="heading-section text-white mb-4">
               {content[`cta_title_${lang}`]}
-            </EditableText>
-            <EditableText field={`cta_text_${lang}`} tag="p" className="text-white/80 text-lg mb-8 block" multiline>
+            </AnimText>
+            <AnimText field={`cta_text_${lang}`} tag="p" per="word" preset="fade" delay={0.15} multiline className="text-white/80 text-lg mb-8">
               {content[`cta_text_${lang}`]}
-            </EditableText>
+            </AnimText>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to={smartPath('/donate', edit)} className="btn-primary text-lg px-8 py-3">
                 <EditableText field={`cta_donate_${lang}`}>{content[`cta_donate_${lang}`]}</EditableText>

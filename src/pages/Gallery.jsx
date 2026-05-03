@@ -1,15 +1,13 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Plus, Trash2, X } from 'lucide-react'
-import AdminItemControls from '../components/AdminItemControls'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import EditableText from '../components/EditableText'
 import PageHero from '../components/PageHero'
 import PageLoading from '../components/PageLoading'
+import { PhotoGallery } from '../components/PhotoGallery'
+import { TextEffect } from '../components/ui/text-effect'
 import { useEditMode } from '../contexts/EditModeContext'
 import { useEditableTable, useGalleryCategories, usePageContent, usePageSeo } from '../hooks/useEditableContent'
-
-const btnBase = 'grid h-8 w-8 place-items-center rounded-full bg-brand-primary text-white shadow ring-1 ring-white/40 transition hover:bg-brand-primary-dark disabled:opacity-30'
-const btnRed  = 'grid h-8 w-8 place-items-center rounded-full bg-red-500 text-white shadow ring-1 ring-white/40 transition hover:bg-red-600'
 
 /* ── Film strip row ─────────────────────────────────────────── */
 function FilmStrip({ images, direction, speed = 30 }) {
@@ -150,59 +148,18 @@ function CategoryView({ cat, allImages, lang, onBack, onLightbox }) {
   )
 }
 
-/* ── Admin category manager ─────────────────────────────────── */
-function CategoryManager({ categories, lang }) {
-  const edit = useEditMode()
-  const [newHe, setNewHe] = useState('')
-  const [newEn, setNewEn] = useState('')
-
-  const handleAdd = () => {
-    if (!newHe.trim() && !newEn.trim()) return
-    const item = edit.addCategory()
-    edit.updateCategory(item.id, { name_he: newHe.trim(), name_en: newEn.trim() })
-    setNewHe(''); setNewEn('')
-  }
-
-  return (
-    <div className="mb-8 rounded-2xl border border-brand-gold/30 bg-white p-5 shadow-sm">
-      <h3 className="text-sm font-bold text-brand-primary mb-4 uppercase tracking-wide">
-        {lang === 'he' ? 'ניהול קטגוריות' : 'Manage Categories'}
-      </h3>
-      {categories.length === 0 && <p className="text-sm text-gray-400 mb-4">{lang === 'he' ? 'אין קטגוריות עדיין.' : 'No categories yet.'}</p>}
-      <div className="space-y-2 mb-4">
-        {categories.map((cat, index) => (
-          <div key={cat.id} className="flex items-center gap-2">
-            <input value={cat.name_he} onChange={(e) => edit.updateCategory(cat.id, { name_he: e.target.value })} placeholder="שם בעברית" dir="rtl" className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:border-brand-primary focus:outline-none" />
-            <input value={cat.name_en} onChange={(e) => edit.updateCategory(cat.id, { name_en: e.target.value })} placeholder="English name" className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:border-brand-primary focus:outline-none" />
-            <button type="button" onClick={() => edit.moveCategory(cat.id, -1)} disabled={index === 0} className={btnBase}><ArrowUp size={13} /></button>
-            <button type="button" onClick={() => edit.moveCategory(cat.id, 1)} disabled={index === categories.length - 1} className={btnBase}><ArrowDown size={13} /></button>
-            <button type="button" onClick={() => edit.removeCategory(cat.id)} className={btnRed}><Trash2 size={13} /></button>
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center gap-2 border-t border-gray-100 pt-4">
-        <input value={newHe} onChange={(e) => setNewHe(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdd()} placeholder="שם חדש בעברית" dir="rtl" className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:border-brand-primary focus:outline-none" />
-        <input value={newEn} onChange={(e) => setNewEn(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdd()} placeholder="New English name" className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:border-brand-primary focus:outline-none" />
-        <button type="button" onClick={handleAdd} className="flex items-center gap-1.5 rounded-full bg-brand-gold px-4 py-1.5 text-sm font-semibold text-white shadow hover:bg-brand-gold/80 transition whitespace-nowrap">
-          <Plus size={14} />{lang === 'he' ? 'הוסף' : 'Add'}
-        </button>
-      </div>
-    </div>
-  )
-}
-
 /* ── Main ───────────────────────────────────────────────────── */
 export default function Gallery() {
   const { i18n } = useTranslation()
   const lang = i18n.language
-  const edit = useEditMode()
+  const { isEditMode } = useEditMode()
   const { content, loading: contentLoading } = usePageContent('gallery')
   const { data: images, loading: imagesLoading } = useEditableTable('gallery', { orderBy: 'order_index', ascending: true })
   const { categories, loading: categoriesLoading } = useGalleryCategories()
   const [activeCat, setActiveCat] = useState(null)
   const [fading, setFading] = useState(false)
   const [lightbox, setLightbox] = useState(null)
-  const fileRef = useRef(null)
+  const contentRef = useRef(null)
   usePageSeo('gallery', content, lang)
 
   const loading = imagesLoading || categoriesLoading
@@ -211,31 +168,21 @@ export default function Gallery() {
   const navigate = (cat) => {
     setFading(true)
     setLightbox(null)
-    setTimeout(() => { setActiveCat(cat); setFading(false) }, 280)
+    setTimeout(() => {
+      setActiveCat(cat)
+      setFading(false)
+      if (cat !== null && contentRef.current) {
+        contentRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    }, 280)
   }
 
   const openLightbox = (index, imgs) => setLightbox({ images: imgs, index })
   const closeLightbox = () => setLightbox(null)
   const lbPrev = () => setLightbox((lb) => ({ ...lb, index: (lb.index - 1 + lb.images.length) % lb.images.length }))
   const lbNext = () => setLightbox((lb) => ({ ...lb, index: (lb.index + 1) % lb.images.length }))
-
-  const categoryOptions = [
-    { value: '', label: lang === 'he' ? '— ללא קטגוריה —' : '— No category —' },
-    ...categories.map((c) => ({ value: c.id, label: c.name_he && c.name_en ? `${c.name_he} / ${c.name_en}` : c.name_he || c.name_en })),
-  ]
-  const drawerFields = [
-    { name: 'alt_he', label: 'Alt text HE' },
-    { name: 'alt_en', label: 'Alt text EN' },
-    { name: 'category_id', label: lang === 'he' ? 'קטגוריה' : 'Category', type: 'select', options: categoryOptions },
-  ]
-
-  const addImages = (event) => {
-    const files = Array.from(event.target.files || [])
-    let first = null
-    files.forEach((file) => { const item = edit.addMediaFile('gallery', file); if (!first && item) first = item })
-    if (first) edit.openDrawer({ title: 'Gallery image', kicker: 'Image', mediaTable: 'gallery', itemId: first.id, fields: drawerFields })
-    event.target.value = ''
-  }
 
   // Two interleaved strips for visual interest
   const strip1 = images.filter((_, i) => i % 2 === 0)
@@ -244,13 +191,25 @@ export default function Gallery() {
   return (
     <div>
       <PageHero>
-        <EditableText field={`title_${lang}`} tag="h1" className="text-4xl md:text-6xl font-bold text-white font-hebrew leading-tight mb-4 drop-shadow-lg block">
-          {content[`title_${lang}`]}
-        </EditableText>
+        {isEditMode ? (
+          <EditableText field={`title_${lang}`} tag="h1" className="text-4xl md:text-6xl font-bold text-white font-hebrew leading-tight mb-4 drop-shadow-lg block">
+            {content[`title_${lang}`]}
+          </EditableText>
+        ) : (
+          <TextEffect as="h1" per="word" preset="slide" className="text-4xl md:text-6xl font-bold text-white font-hebrew leading-tight mb-4 drop-shadow-lg">
+            {content[`title_${lang}`] || ''}
+          </TextEffect>
+        )}
         <div className="w-20 h-1 bg-brand-gold mx-auto rounded-full mb-4" />
-        <EditableText field={`subtitle_${lang}`} tag="p" className="text-white/80 text-lg md:text-xl block">
-          {content[`subtitle_${lang}`]}
-        </EditableText>
+        {isEditMode ? (
+          <EditableText field={`subtitle_${lang}`} tag="p" className="text-white/80 text-lg md:text-xl block">
+            {content[`subtitle_${lang}`]}
+          </EditableText>
+        ) : (
+          <TextEffect as="p" per="word" preset="fade" delay={0.35} className="text-white/80 text-lg md:text-xl">
+            {content[`subtitle_${lang}`] || ''}
+          </TextEffect>
+        )}
       </PageHero>
 
       {/* ── Scrolling film strips (always visible, full-bleed) ── */}
@@ -261,19 +220,8 @@ export default function Gallery() {
         </div>
       )}
 
-      <div className="py-16">
+      <div ref={contentRef} className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          {/* Admin tools */}
-          {edit.isEditMode && !edit.isPreviewMode && <CategoryManager categories={categories} lang={lang} />}
-          {edit.isEditMode && !edit.isPreviewMode && (
-            <div className="mb-6 text-center">
-              <button type="button" onClick={() => fileRef.current?.click()} className="rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white shadow-lg hover:bg-brand-primary-dark">
-                {lang === 'he' ? 'הוסף תמונות' : 'Add images'}
-              </button>
-              <input ref={fileRef} type="file" accept="image/*" multiple onChange={addImages} className="hidden" />
-            </div>
-          )}
 
           {loading && (
             <div className="flex justify-center py-20">
@@ -281,36 +229,8 @@ export default function Gallery() {
             </div>
           )}
 
-          {/* Admin flat view */}
-          {!loading && edit.isEditMode && images.length > 0 && (
-            <div className="columns-2 sm:columns-3 lg:columns-4 gap-3">
-              {images.map((img, index) => (
-                <div key={img.id} className="break-inside-avoid mb-3">
-                  <div className="relative">
-                    <AdminItemControls
-                      label="Image"
-                      onEdit={() => edit.openDrawer({ title: 'Gallery image', kicker: 'Image', mediaTable: 'gallery', itemId: img.id, fields: drawerFields })}
-                      onAdd={() => fileRef.current?.click()}
-                      onDelete={() => edit.removeMediaItem('gallery', img.id)}
-                      onMoveUp={() => edit.moveMediaItem('gallery', img.id, -1)}
-                      onMoveDown={() => edit.moveMediaItem('gallery', img.id, 1)}
-                      canMoveUp={index > 0}
-                      canMoveDown={index < images.length - 1}
-                    />
-                    <img src={img.image_url} alt={img[`alt_${lang}`] || ''} className="w-full h-auto rounded-xl shadow-md" loading="lazy" />
-                    {img.category_id && (
-                      <div className="absolute bottom-2 start-2 bg-brand-gold/90 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                        {categories.find((c) => c.id === img.category_id)?.[`name_${lang}`] || '—'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Public view */}
-          {!loading && !edit.isEditMode && (
+          {/* Public + admin preview — same view */}
+          {!loading && (
             <div
               style={{
                 opacity: fading ? 0 : 1,
@@ -321,19 +241,16 @@ export default function Gallery() {
               {/* Showcase */}
               {activeCat === null && (
                 <>
-                  {/* Section title */}
-                  {categories.length > 0 && (
-                    <div className="text-center mb-10" style={{ animation: 'cinema-fade 0.8s ease forwards' }}>
-                      <p className="text-sm font-semibold text-brand-gold uppercase tracking-widest mb-2">
-                        {lang === 'he' ? 'בחר נושא' : 'Explore by topic'}
-                      </p>
-                      <h2 className="text-3xl md:text-4xl font-bold text-brand-primary">
-                        {lang === 'he' ? 'מה אנחנו עושים' : 'What We Do'}
-                      </h2>
-                    </div>
-                  )}
-
-                  {categories.length === 0 ? (
+                  {/* Animated folder spread — replaces the old grid */}
+                  {categories.length > 0 ? (
+                    <PhotoGallery
+                      categories={categories}
+                      images={images}
+                      animationDelay={0.3}
+                      lang={lang}
+                      onNavigate={navigate}
+                    />
+                  ) : (
                     <div className="columns-2 sm:columns-3 lg:columns-4 gap-3">
                       {images.map((img, i) => (
                         <div key={img.id} className="break-inside-avoid mb-3" style={{ animation: 'cinema-in 0.6s ease forwards', animationDelay: `${Math.min(i * 0.05, 0.4)}s`, opacity: 0 }}>
@@ -341,12 +258,6 @@ export default function Gallery() {
                             <img src={img.image_url} alt={img[`alt_${lang}`] || ''} className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                           </button>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                      {categories.map((cat, i) => (
-                        <ShowcaseCard key={cat.id} cat={cat} images={images} lang={lang} onClick={() => navigate(cat)} delay={i * 0.1} />
                       ))}
                     </div>
                   )}

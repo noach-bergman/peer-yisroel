@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import AdminDrawer from '../../components/AdminDrawer'
+import AdminSidebar from '../../components/AdminSidebar'
 import AdminToolbar from '../../components/AdminToolbar'
 import Footer from '../../components/Footer'
 import Navbar from '../../components/Navbar'
@@ -15,34 +16,46 @@ import Gallery from '../Gallery'
 import Home from '../Home'
 import Login from './Login'
 import SlideshowEditor from './SlideshowEditor'
+import GalleryManager from './GalleryManager'
+import GeneralSettings from './GeneralSettings'
 
-const pageComponents = {
-  home: Home,
+const PAGE_COMPONENTS = {
+  home:      Home,
   slideshow: SlideshowEditor,
-  about: About,
-  gallery: Gallery,
-  donate: Donate,
-  contact: Contact,
+  about:     About,
+  gallery:   Gallery,
+  donate:    Donate,
+  contact:   Contact,
 }
 
-function pageFromPath(pathname) {
-  const key = pathname.replace(/^\/admin\/?/, '').split('/')[0] || 'home'
-  return ADMIN_PAGES.some((page) => page.key === key) ? key : null
+const STANDALONE_COMPONENTS = {
+  'gallery-manager': GalleryManager,
+  settings:          GeneralSettings,
 }
 
+function routeSegment(pathname) {
+  return pathname.replace(/^\/admin\/?/, '').split('/')[0] || 'home'
+}
+
+/* ── Page-editor wrapper (needs EditModeContext) ─── */
 function AdminChrome({ children }) {
   const { loading, error } = useEditMode()
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1">{children}</main>
-      <Footer />
+    <div className="flex min-h-screen">
+      <AdminSidebar />
+      <div className="flex flex-col flex-1" style={{ marginLeft: '240px' }}>
+        <Navbar />
+        <main className="flex-1">{children}</main>
+        <Footer />
+      </div>
       <AdminToolbar />
       <AdminDrawer />
       {loading && (
         <div className="fixed inset-0 z-[9999] grid place-items-center bg-white/70 backdrop-blur-sm" dir="ltr">
-          <div className="rounded-2xl bg-white px-6 py-4 text-sm font-semibold text-brand-primary shadow-xl">Loading editor...</div>
+          <div className="rounded-2xl bg-white px-6 py-4 text-sm font-semibold text-brand-primary shadow-xl">
+            Loading editor...
+          </div>
         </div>
       )}
       {error && (
@@ -54,15 +67,27 @@ function AdminChrome({ children }) {
   )
 }
 
+/* ── Standalone tabs wrapper (no EditModeContext) ─── */
+function AdminShell({ children }) {
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <AdminSidebar />
+      <div className="flex-1" style={{ marginLeft: '240px' }}>
+        <main>{children}</main>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminLayout() {
   const { user, loading } = useAuth()
-  const { i18n } = useTranslation()
-  const location = useLocation()
-  const pageKey = pageFromPath(location.pathname)
+  const { i18n }          = useTranslation()
+  const location          = useLocation()
+  const seg               = routeSegment(location.pathname)
 
   useEffect(() => {
     document.documentElement.lang = i18n.language
-    document.documentElement.dir = i18n.language === 'he' ? 'rtl' : 'ltr'
+    document.documentElement.dir  = i18n.language === 'he' ? 'rtl' : 'ltr'
   }, [i18n.language])
 
   if (loading) {
@@ -74,14 +99,27 @@ export default function AdminLayout() {
   }
 
   if (!user) return <Login />
+
+  /* Standalone tabs */
+  const StandaloneComponent = STANDALONE_COMPONENTS[seg]
+  if (StandaloneComponent) {
+    return (
+      <AdminShell>
+        <StandaloneComponent />
+      </AdminShell>
+    )
+  }
+
+  /* Page-editor tabs */
+  const pageKey = ADMIN_PAGES.some((p) => p.key === seg) ? seg : null
   if (!pageKey) return <Navigate to="/admin/home" replace />
 
-  const Page = pageComponents[pageKey]
+  const Page = PAGE_COMPONENTS[pageKey]
 
   const handleLanguageChange = (next) => {
     i18n.changeLanguage(next)
     document.documentElement.lang = next
-    document.documentElement.dir = next === 'he' ? 'rtl' : 'ltr'
+    document.documentElement.dir  = next === 'he' ? 'rtl' : 'ltr'
   }
 
   return (
