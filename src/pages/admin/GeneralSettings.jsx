@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Save } from 'lucide-react'
-import { supabase } from '../../supabase'
+import { supabase, supabaseConfigured } from '../../supabase'
+import { DEFAULT_GLOBAL_CONTENT, DEFAULT_SETTINGS, normalizeGlobalContent, normalizeSettings } from '../../content/defaultContent'
 
 const SECTIONS = [
   {
@@ -59,13 +60,22 @@ export default function GeneralSettings() {
 
   useEffect(() => {
     async function load() {
+      if (!supabaseConfigured || !supabase) {
+        setValues({
+          ...DEFAULT_GLOBAL_CONTENT,
+          ...DEFAULT_SETTINGS,
+        })
+        setError('Supabase is not configured. Settings can be viewed but not saved.')
+        setLoading(false)
+        return
+      }
       const [{ data: globalRow }, { data: settingsRow }] = await Promise.all([
-        supabase.from('site_content').select('content').eq('page_key', 'global').maybeSingle(),
-        supabase.from('site_content').select('content').eq('page_key', 'settings').maybeSingle(),
+        supabase.from('site_content').select('*').eq('key', 'global').maybeSingle(),
+        supabase.from('site_content').select('*').eq('key', 'settings').maybeSingle(),
       ])
       setValues({
-        ...(globalRow?.content   || {}),
-        ...(settingsRow?.content || {}),
+        ...normalizeGlobalContent(globalRow),
+        ...normalizeSettings(settingsRow),
       })
       setLoading(false)
     }
@@ -75,6 +85,10 @@ export default function GeneralSettings() {
   const set = (key, val) => setValues((v) => ({ ...v, [key]: val }))
 
   async function handleSave() {
+    if (!supabaseConfigured || !supabase) {
+      setError('Supabase is not configured. Changes cannot be saved.')
+      return
+    }
     setSaving(true)
     setError(null)
 
@@ -85,8 +99,19 @@ export default function GeneralSettings() {
     const settingsContent = Object.fromEntries(settingsKeys.map((k) => [k, values[k] ?? '']))
 
     const [r1, r2] = await Promise.all([
-      supabase.from('site_content').upsert({ page_key: 'global',   content: globalContent },   { onConflict: 'page_key' }),
-      supabase.from('site_content').upsert({ page_key: 'settings', content: settingsContent }, { onConflict: 'page_key' }),
+      supabase.from('site_content').upsert({ key: 'global', content: globalContent }, { onConflict: 'key' }),
+      supabase.from('site_content').upsert({
+        key: 'settings',
+        content: settingsContent,
+        contact_email: settingsContent.contact_email || '',
+        contact_phone: settingsContent.contact_phone || '',
+        contact_address: settingsContent.contact_address_he || '',
+        donation_url: settingsContent.donation_url || '',
+        bank_name: settingsContent.bank_account_name_he || '',
+        bank_name_en: settingsContent.bank_account_name_en || '',
+        bank_account: settingsContent.bank_account || '',
+        bank_branch: settingsContent.bank_branch || '',
+      }, { onConflict: 'key' }),
     ])
 
     setSaving(false)
@@ -119,7 +144,7 @@ export default function GeneralSettings() {
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !supabaseConfigured || !supabase}
             className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-primary-dark disabled:opacity-50 transition"
           >
             <Save size={16} /> {saving ? 'Saving…' : 'Save'}
@@ -171,7 +196,7 @@ export default function GeneralSettings() {
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !supabaseConfigured || !supabase}
             className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-primary-dark disabled:opacity-50 transition"
           >
             <Save size={16} /> {saving ? 'Saving…' : 'Save Settings'}

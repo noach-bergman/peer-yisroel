@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, FolderPlus, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
-import { supabase } from '../../supabase'
+import { supabase, supabaseConfigured } from '../../supabase'
 
 const BUCKET = 'peeryisroel'
+const MAX_IMAGE_SIZE = 8 * 1024 * 1024
 
 /* ── Toast ───────────────────────────────────────────────── */
 function Toast({ msg, type = 'info', onDone }) {
@@ -23,6 +24,12 @@ function getStoragePath(publicUrl) {
   return match ? match[1] : null
 }
 
+function validateImageFile(file) {
+  if (!file.type.startsWith('image/')) return 'Please choose image files only.'
+  if (file.size > MAX_IMAGE_SIZE) return 'Image files must be under 8MB.'
+  return null
+}
+
 /* ── Main ────────────────────────────────────────────────── */
 export default function GalleryManager() {
   const fileRef = useRef(null)
@@ -38,32 +45,41 @@ export default function GalleryManager() {
   const [newCatEn, setNewCatEn]       = useState('')
   const [editingCat, setEditingCat]   = useState(null)
 
-  useEffect(() => { loadCategories() }, [])
-  useEffect(() => { if (selectedCat) loadImages(selectedCat.id) }, [selectedCat])
+  const notify = useCallback((msg, type = 'info') => setToast({ msg, type }), [])
 
-  async function loadCategories() {
+  const loadCategories = useCallback(async () => {
+    if (!supabaseConfigured || !supabase) {
+      setLoading(false)
+      notify('Supabase is not configured. Gallery manager is unavailable.', 'error')
+      return
+    }
     setLoading(true)
     const { data, error } = await supabase
       .from('gallery_categories')
       .select('*')
       .order('order_index', { ascending: true })
-    if (!error) setCategories(data || [])
+    if (error) notify('Error loading folders — ' + error.message, 'error')
+    else setCategories(data || [])
     setLoading(false)
-  }
+  }, [notify])
 
-  async function loadImages(catId) {
+  const loadImages = useCallback(async (catId) => {
+    if (!supabaseConfigured || !supabase) return
     const { data, error } = await supabase
       .from('gallery')
       .select('*')
       .eq('category_id', catId)
       .order('order_index', { ascending: true })
-    if (!error) setImages(data || [])
-  }
+    if (error) notify('Error loading images — ' + error.message, 'error')
+    else setImages(data || [])
+  }, [notify])
 
-  const notify = (msg, type = 'info') => setToast({ msg, type })
+  useEffect(() => { loadCategories() }, [loadCategories])
+  useEffect(() => { if (selectedCat) loadImages(selectedCat.id) }, [loadImages, selectedCat])
 
   /* ── Category CRUD ── */
   async function addCategory() {
+    if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
     if (!newCatHe.trim() && !newCatEn.trim()) return
     const { data, error } = await supabase
       .from('gallery_categories')
@@ -78,6 +94,7 @@ export default function GalleryManager() {
   }
 
   async function saveEditCat() {
+    if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
     if (!editingCat) return
     const { error } = await supabase
       .from('gallery_categories')
@@ -91,7 +108,14 @@ export default function GalleryManager() {
   }
 
   async function deleteCategory(cat) {
+    if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
     if (!confirm(`Delete folder "${cat.name_en || cat.name_he}"? Images inside will be unlinked.`)) return
+    const { error: unlinkError } = await supabase.from('gallery').update({
+      category_id: null,
+      category_he: '',
+      category_en: '',
+    }).eq('category_id', cat.id)
+    if (unlinkError) { notify('Error unlinking images — ' + unlinkError.message, 'error'); return }
     const { error } = await supabase.from('gallery_categories').delete().eq('id', cat.id)
     if (error) { notify('Error deleting — ' + error.message, 'error'); return }
     setCategories((prev) => prev.filter((c) => c.id !== cat.id))
@@ -100,6 +124,7 @@ export default function GalleryManager() {
   }
 
   async function moveCat(cat, dir) {
+    if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
     const idx = categories.findIndex((c) => c.id === cat.id)
     const nextIdx = idx + dir
     if (nextIdx < 0 || nextIdx >= categories.length) return
@@ -111,9 +136,16 @@ export default function GalleryManager() {
 
   /* ── Image CRUD ── */
   async function uploadImages(event) {
+    if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
     if (!selectedCat) return
     const files = Array.from(event.target.files || [])
     if (!files.length) return
+    const invalid = files.find((file) => validateImageFile(file))
+    if (invalid) {
+      notify(validateImageFile(invalid), 'error')
+      event.target.value = ''
+      return
+    }
     setUploading(true)
     let added = 0
     let failed = 0
@@ -147,6 +179,7 @@ export default function GalleryManager() {
   }
 
   async function deleteImage(img) {
+    if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
     const storagePath = img.storage_path || getStoragePath(img.image_url)
     const { error } = await supabase.from('gallery').delete().eq('id', img.id)
     if (error) { notify('Error deleting — ' + error.message, 'error'); return }
@@ -156,6 +189,7 @@ export default function GalleryManager() {
   }
 
   async function moveImage(img, dir) {
+    if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
     const idx = images.findIndex((i) => i.id === img.id)
     const nextIdx = idx + dir
     if (nextIdx < 0 || nextIdx >= images.length) return

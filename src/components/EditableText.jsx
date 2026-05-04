@@ -35,7 +35,7 @@ export default function EditableText({
   }
 
   if (editing) {
-    const sharedClass = `w-full min-w-[4rem] bg-white/95 text-current border border-brand-gold outline-none resize-none rounded-md px-2 py-1 ${className}`
+    const sharedClass = `w-full min-w-[4rem] bg-white/95 !text-gray-900 border border-brand-gold outline-none resize-none rounded-md px-2 py-1 ${className}`
     return multiline ? (
       <textarea
         ref={inputRef}

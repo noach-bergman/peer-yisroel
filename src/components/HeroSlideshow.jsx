@@ -7,7 +7,7 @@ import AdminItemControls from './AdminItemControls'
 
 export default function HeroSlideshow({ children, logo }) {
   const { i18n } = useTranslation()
-  const { data: slides, loading } = useEditableTable('hero_slideshow', { orderBy: 'created_at', ascending: false })
+  const { data: slides, loading } = useEditableTable('hero_slideshow', { orderBy: 'order_index', ascending: true })
   const edit = useEditMode()
   const [current, setCurrent] = useState(0)
   const fileRef = useRef(null)

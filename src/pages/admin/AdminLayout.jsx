@@ -40,11 +40,12 @@ function routeSegment(pathname) {
 /* ── Page-editor wrapper (needs EditModeContext) ─── */
 function AdminChrome({ children }) {
   const { loading, error } = useEditMode()
+  const contentStyle = { marginLeft: '240px', width: 'calc(100% - 240px)', minWidth: 0 }
 
   return (
     <div className="flex min-h-screen">
       <AdminSidebar />
-      <div className="flex flex-col flex-1" style={{ marginLeft: '240px' }}>
+      <div className="flex flex-col flex-1 overflow-x-hidden" style={contentStyle}>
         <Navbar />
         <main className="flex-1">{children}</main>
         <Footer />
@@ -69,10 +70,12 @@ function AdminChrome({ children }) {
 
 /* ── Standalone tabs wrapper (no EditModeContext) ─── */
 function AdminShell({ children }) {
+  const contentStyle = { marginLeft: '240px', width: 'calc(100% - 240px)', minWidth: 0 }
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar />
-      <div className="flex-1" style={{ marginLeft: '240px' }}>
+      <div className="flex-1 overflow-x-hidden" style={contentStyle}>
         <main>{children}</main>
       </div>
     </div>

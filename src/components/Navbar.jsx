@@ -69,7 +69,6 @@ export default function Navbar() {
     : heroTop
       ? 'bg-brand-primary/80 backdrop-blur-sm shadow-md'
       : 'bg-white/95 shadow-md backdrop-blur'
-  const brandClass = onDarkSurface ? 'text-white' : 'text-brand-primary'
   const activeLinkClass = onDarkSurface ? 'bg-white/20 text-white' : 'bg-brand-primary/10 text-brand-primary'
   const inactiveLinkClass = onDarkSurface ? 'text-white/80 hover:bg-white/10 hover:text-white' : 'text-brand-primary/80 hover:bg-brand-primary/10 hover:text-brand-primary'
   const languageButtonClass = onDarkSurface

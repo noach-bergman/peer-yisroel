@@ -18,6 +18,7 @@ function FilmStrip({ images, direction, speed = 30 }) {
   return (
     <div
       className="overflow-hidden group"
+      dir="ltr"
       style={{ maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)' }}
     >
       <div
@@ -44,40 +45,6 @@ function FilmStrip({ images, direction, speed = 30 }) {
         ))}
       </div>
     </div>
-  )
-}
-
-/* ── Category showcase card ─────────────────────────────────── */
-function ShowcaseCard({ cat, images, lang, onClick, delay }) {
-  const catImages = images.filter((img) => img.category_id === cat.id)
-  const cover     = catImages[0]?.image_url
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group relative w-full overflow-hidden rounded-2xl shadow-xl focus:outline-none"
-      style={{ aspectRatio: '4/3', animation: `cinema-in 0.7s ease forwards`, animationDelay: `${delay}s`, opacity: 0 }}
-    >
-      {cover
-        ? <img src={cover} alt="" className="absolute inset-0 w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700" />
-        : <div className="absolute inset-0 bg-gradient-to-br from-brand-primary to-[#0e2540]" />
-      }
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:from-black/55 transition-all duration-500" />
-      <div className="absolute bottom-0 inset-x-0 p-5 text-start text-white">
-        <p className="text-2xl md:text-3xl font-bold leading-tight drop-shadow-lg">{cat[`name_${lang}`] || cat.name_he}</p>
-        {cat.name_en && lang === 'he' && <p className="text-sm text-white/50 mt-0.5 font-light">{cat.name_en}</p>}
-        <p className="text-sm text-white/60 mt-1">{catImages.length} {lang === 'he' ? 'תמונות' : 'photos'}</p>
-      </div>
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <span className="bg-brand-gold text-white font-bold text-sm px-5 py-2.5 rounded-full shadow-xl">
-          {lang === 'he' ? '← כנס לצפייה' : 'View Gallery →'}
-        </span>
-      </div>
-      <div className="absolute top-3 end-3 bg-black/50 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-        {catImages.length}
-      </div>
-    </button>
   )
 }
 
@@ -187,9 +154,11 @@ export default function Gallery() {
   // Two interleaved strips for visual interest
   const strip1 = images.filter((_, i) => i % 2 === 0)
   const strip2 = images.filter((_, i) => i % 2 === 1)
+  const categorizedCategories = categories.filter((cat) => images.some((img) => img.category_id === cat.id))
+  const hasCategorizedImages = categorizedCategories.length > 0
 
   return (
-    <div>
+    <div className="overflow-x-hidden">
       <PageHero>
         {isEditMode ? (
           <EditableText field={`title_${lang}`} tag="h1" className="text-4xl md:text-6xl font-bold text-white font-hebrew leading-tight mb-4 drop-shadow-lg block">
@@ -222,7 +191,6 @@ export default function Gallery() {
 
       <div ref={contentRef} className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
           {loading && (
             <div className="flex justify-center py-20">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary" />
@@ -243,23 +211,44 @@ export default function Gallery() {
                 <>
                   {/* Animated folder spread — replaces the old grid */}
                   {categories.length > 0 ? (
-                    <PhotoGallery
-                      categories={categories}
-                      images={images}
-                      animationDelay={0.3}
-                      lang={lang}
-                      onNavigate={navigate}
-                    />
+                    hasCategorizedImages ? (
+                      <>
+                        <PhotoGallery
+                          categories={categorizedCategories}
+                          images={images}
+                          animationDelay={0.12}
+                          lang={lang}
+                          onNavigate={navigate}
+                          kicker={(
+                            <EditableText field={`story_kicker_${lang}`}>
+                              {content[`story_kicker_${lang}`]}
+                            </EditableText>
+                          )}
+                          headingPrefix={(
+                            <EditableText field={`story_heading_prefix_${lang}`} className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">
+                              {content[`story_heading_prefix_${lang}`]}
+                            </EditableText>
+                          )}
+                          headingHighlight={(
+                            <EditableText field={`story_heading_highlight_${lang}`}>
+                              {content[`story_heading_highlight_${lang}`]}
+                            </EditableText>
+                          )}
+                        />
+                      </>
+                    ) : (
+                      <p className="text-center py-16 text-gray-400">
+                        <EditableText field={`empty_${lang}`}>
+                          {content[`empty_${lang}`]}
+                        </EditableText>
+                      </p>
+                    )
                   ) : (
-                    <div className="columns-2 sm:columns-3 lg:columns-4 gap-3">
-                      {images.map((img, i) => (
-                        <div key={img.id} className="break-inside-avoid mb-3" style={{ animation: 'cinema-in 0.6s ease forwards', animationDelay: `${Math.min(i * 0.05, 0.4)}s`, opacity: 0 }}>
-                          <button type="button" onClick={() => openLightbox(i, images)} className="w-full rounded-xl overflow-hidden shadow-md hover:shadow-xl group block">
-                            <img src={img.image_url} alt={img[`alt_${lang}`] || ''} className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                    <p className="text-center py-16 text-gray-400">
+                      <EditableText field={`empty_${lang}`}>
+                        {content[`empty_${lang}`]}
+                      </EditableText>
+                    </p>
                   )}
                 </>
               )}
