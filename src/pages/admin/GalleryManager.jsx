@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, FolderPlus, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Film, FolderPlus, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
 import { supabase, supabaseConfigured } from '../../supabase'
-
-const BUCKET = 'peeryisroel'
-const MAX_IMAGE_SIZE = 8 * 1024 * 1024
+import { uploadToCloudinary, validateMediaFile, isVideoFile } from '../../lib/cloudinary'
 
 /* ── Toast ───────────────────────────────────────────────── */
 function Toast({ msg, type = 'info', onDone }) {
@@ -17,17 +15,6 @@ function Toast({ msg, type = 'info', onDone }) {
       {msg}
     </div>
   )
-}
-
-function getStoragePath(publicUrl) {
-  const match = publicUrl.match(/\/object\/public\/[^/]+\/(.+)$/)
-  return match ? match[1] : null
-}
-
-function validateImageFile(file) {
-  if (!file.type.startsWith('image/')) return 'Please choose image files only.'
-  if (file.size > MAX_IMAGE_SIZE) return 'Image files must be under 8MB.'
-  return null
 }
 
 /* ── Main ────────────────────────────────────────────────── */
@@ -70,7 +57,7 @@ export default function GalleryManager() {
       .select('*')
       .eq('category_id', catId)
       .order('order_index', { ascending: true })
-    if (error) notify('Error loading images — ' + error.message, 'error')
+    if (error) notify('Error loading items — ' + error.message, 'error')
     else setImages(data || [])
   }, [notify])
 
@@ -109,13 +96,13 @@ export default function GalleryManager() {
 
   async function deleteCategory(cat) {
     if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
-    if (!confirm(`Delete folder "${cat.name_en || cat.name_he}"? Images inside will be unlinked.`)) return
+    if (!confirm(`Delete folder "${cat.name_en || cat.name_he}"? Items inside will be unlinked.`)) return
     const { error: unlinkError } = await supabase.from('gallery').update({
       category_id: null,
       category_he: '',
       category_en: '',
     }).eq('category_id', cat.id)
-    if (unlinkError) { notify('Error unlinking images — ' + unlinkError.message, 'error'); return }
+    if (unlinkError) { notify('Error unlinking items — ' + unlinkError.message, 'error'); return }
     const { error } = await supabase.from('gallery_categories').delete().eq('id', cat.id)
     if (error) { notify('Error deleting — ' + error.message, 'error'); return }
     setCategories((prev) => prev.filter((c) => c.id !== cat.id))
@@ -134,58 +121,62 @@ export default function GalleryManager() {
     await Promise.all(reordered.map((c, i) => supabase.from('gallery_categories').update({ order_index: i }).eq('id', c.id)))
   }
 
-  /* ── Image CRUD ── */
-  async function uploadImages(event) {
+  /* ── Media CRUD ── */
+  async function uploadMedia(event) {
     if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
     if (!selectedCat) return
     const files = Array.from(event.target.files || [])
     if (!files.length) return
-    const invalid = files.find((file) => validateImageFile(file))
-    if (invalid) {
-      notify(validateImageFile(invalid), 'error')
+
+    const invalidFile = files.find((f) => validateMediaFile(f))
+    if (invalidFile) {
+      notify(validateMediaFile(invalidFile), 'error')
       event.target.value = ''
       return
     }
+
     setUploading(true)
     let added = 0
     let failed = 0
+
     for (const file of files) {
-      const ext  = file.name.split('.').pop().toLowerCase()
-      const path = `gallery/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file)
-      if (upErr) { failed++; continue }
-      const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(path)
-      const { data: row, error: dbErr } = await supabase
-        .from('gallery')
-        .insert({
-          image_url: publicUrl,
-          storage_path: path,
-          category_id: selectedCat.id,
-          category_he: selectedCat.name_he || '',
-          category_en: selectedCat.name_en || '',
-          order_index: images.length + added,
-          alt_he: '',
-          alt_en: '',
-        })
-        .select()
-        .single()
-      if (!dbErr && row) { setImages((prev) => [...prev, row]); added++ }
-      else failed++
+      try {
+        const { secure_url, public_id } = await uploadToCloudinary(file, 'gallery')
+        const mediaType = isVideoFile(file) ? 'video' : 'image'
+        const { data: row, error: dbErr } = await supabase
+          .from('gallery')
+          .insert({
+            image_url: secure_url,
+            cloudinary_public_id: public_id,
+            media_type: mediaType,
+            category_id: selectedCat.id,
+            category_he: selectedCat.name_he || '',
+            category_en: selectedCat.name_en || '',
+            order_index: images.length + added,
+            alt_he: '',
+            alt_en: '',
+          })
+          .select()
+          .single()
+        if (!dbErr && row) { setImages((prev) => [...prev, row]); added++ }
+        else failed++
+      } catch {
+        failed++
+      }
     }
+
     setUploading(false)
     event.target.value = ''
     if (failed > 0) notify(`${added} uploaded, ${failed} failed`, failed > 0 && added === 0 ? 'error' : 'info')
-    else notify(`${added} image${added !== 1 ? 's' : ''} uploaded`)
+    else notify(`${added} item${added !== 1 ? 's' : ''} uploaded`)
   }
 
-  async function deleteImage(img) {
+  async function deleteMedia(item) {
     if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
-    const storagePath = img.storage_path || getStoragePath(img.image_url)
-    const { error } = await supabase.from('gallery').delete().eq('id', img.id)
+    const { error } = await supabase.from('gallery').delete().eq('id', item.id)
     if (error) { notify('Error deleting — ' + error.message, 'error'); return }
-    if (storagePath) await supabase.storage.from(BUCKET).remove([storagePath])
-    setImages((prev) => prev.filter((i) => i.id !== img.id))
-    notify('Image deleted')
+    setImages((prev) => prev.filter((i) => i.id !== item.id))
+    notify('Deleted')
   }
 
   async function moveImage(img, dir) {
@@ -207,7 +198,7 @@ export default function GalleryManager() {
         <div className="mb-8">
           <p className="text-xs font-bold uppercase tracking-widest text-brand-gold">Content</p>
           <h1 className="mt-1 text-3xl font-bold text-brand-primary">Gallery Manager</h1>
-          <p className="mt-1 text-sm text-gray-500">Add folders, upload photos, and organise by category</p>
+          <p className="mt-1 text-sm text-gray-500">Add folders, upload photos and videos, and organise by category</p>
         </div>
 
         {loading ? (
@@ -301,20 +292,20 @@ export default function GalleryManager() {
               </div>
             </div>
 
-            {/* Right: images */}
+            {/* Right: media grid */}
             <div className="flex-1 min-w-0">
               {!selectedCat ? (
                 <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-8 py-20 text-center text-gray-400">
                   <FolderPlus size={40} className="mx-auto mb-3 opacity-40" />
                   <p className="text-lg font-semibold">Select a folder on the left</p>
-                  <p className="text-sm mt-1">Then upload and manage photos here</p>
+                  <p className="text-sm mt-1">Then upload photos and videos here</p>
                 </div>
               ) : (
                 <>
                   <div className="mb-5 flex items-center justify-between">
                     <div>
                       <h2 className="text-xl font-bold text-brand-primary">{selectedCat.name_en || selectedCat.name_he}</h2>
-                      <p className="text-sm text-gray-400">{images.length} photo{images.length !== 1 ? 's' : ''}</p>
+                      <p className="text-sm text-gray-400">{images.length} item{images.length !== 1 ? 's' : ''}</p>
                     </div>
                     <button
                       type="button"
@@ -322,32 +313,56 @@ export default function GalleryManager() {
                       disabled={uploading}
                       className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-primary-dark disabled:opacity-50 transition"
                     >
-                      <Upload size={16} /> {uploading ? 'Uploading…' : 'Upload Photos'}
+                      <Upload size={16} /> {uploading ? 'Uploading…' : 'Upload'}
                     </button>
-                    <input ref={fileRef} type="file" accept="image/*" multiple onChange={uploadImages} className="hidden" />
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*,video/mp4,video/webm,video/quicktime"
+                      multiple
+                      onChange={uploadMedia}
+                      className="hidden"
+                    />
                   </div>
 
                   {images.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-8 py-16 text-center text-gray-400">
-                      <p className="font-semibold">No photos in this folder yet</p>
-                      <p className="text-sm mt-1">Click "Upload Photos" to get started</p>
+                      <p className="font-semibold">No items in this folder yet</p>
+                      <p className="text-sm mt-1">Click "Upload" to add photos or videos</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {images.map((img, idx) => (
-                        <div key={img.id} className="group relative rounded-2xl overflow-hidden bg-gray-100 aspect-square shadow-sm ring-1 ring-gray-200">
-                          <img src={img.image_url} alt={img.alt_en || img.alt_he || ''} className="w-full h-full object-cover" loading="lazy" />
+                      {images.map((item, idx) => (
+                        <div key={item.id} className="group relative rounded-2xl overflow-hidden bg-gray-100 aspect-square shadow-sm ring-1 ring-gray-200">
+                          {item.media_type === 'video' ? (
+                            <>
+                              <video
+                                src={item.image_url}
+                                className="w-full h-full object-cover"
+                                muted
+                                loop
+                                playsInline
+                                onMouseEnter={(e) => e.currentTarget.play()}
+                                onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0 }}
+                              />
+                              <div className="absolute top-2 left-2 rounded-full bg-black/60 p-1 pointer-events-none">
+                                <Film size={11} className="text-white" />
+                              </div>
+                            </>
+                          ) : (
+                            <img src={item.image_url} alt={item.alt_en || item.alt_he || ''} className="w-full h-full object-cover" loading="lazy" />
+                          )}
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
                             <div className="flex justify-end">
-                              <button type="button" onClick={() => deleteImage(img)} className="rounded-full bg-red-600 p-1.5 text-white hover:bg-red-700 shadow">
+                              <button type="button" onClick={() => deleteMedia(item)} className="rounded-full bg-red-600 p-1.5 text-white hover:bg-red-700 shadow">
                                 <X size={13} />
                               </button>
                             </div>
                             <div className="flex justify-center gap-2">
-                              <button type="button" onClick={() => moveImage(img, -1)} disabled={idx === 0} className="rounded-full bg-white/80 p-1.5 text-gray-700 hover:bg-white disabled:opacity-30 shadow">
+                              <button type="button" onClick={() => moveImage(item, -1)} disabled={idx === 0} className="rounded-full bg-white/80 p-1.5 text-gray-700 hover:bg-white disabled:opacity-30 shadow">
                                 <ArrowUp size={13} />
                               </button>
-                              <button type="button" onClick={() => moveImage(img, 1)} disabled={idx === images.length - 1} className="rounded-full bg-white/80 p-1.5 text-gray-700 hover:bg-white disabled:opacity-30 shadow">
+                              <button type="button" onClick={() => moveImage(item, 1)} disabled={idx === images.length - 1} className="rounded-full bg-white/80 p-1.5 text-gray-700 hover:bg-white disabled:opacity-30 shadow">
                                 <ArrowDown size={13} />
                               </button>
                             </div>

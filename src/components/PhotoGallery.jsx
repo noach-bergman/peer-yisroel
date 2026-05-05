@@ -46,17 +46,21 @@ export const PhotoGallery = ({
   const count   = spreadCats.length
   const xSet    = X_POSITIONS[count] ?? X_POSITIONS[5]
 
-  const slots = spreadCats.map((cat, i) => ({
-    id:        cat.id,
-    order:     i,
-    x:         `${xSet[i]}px`,
-    y:         `${Y_OFFSETS[i] ?? 0}px`,
-    zIndex:    Z_INDEXES[i] ?? 10,
-    direction: DIRECTIONS[i] ?? 'right',
-    src:       images.find((img) => img.category_id === cat.id)?.image_url ?? '',
-    title:     cat[`name_${lang}`] || cat.name_he || '',
-    cat,
-  }))
+  const slots = spreadCats.map((cat, i) => {
+    const catImages = images.filter((img) => img.category_id === cat.id)
+    const cover = catImages.find((img) => img.media_type !== 'video') ?? catImages[0]
+    return {
+      id:        cat.id,
+      order:     i,
+      x:         `${xSet[i]}px`,
+      y:         `${Y_OFFSETS[i] ?? 0}px`,
+      zIndex:    Z_INDEXES[i] ?? 10,
+      direction: DIRECTIONS[i] ?? 'right',
+      src:       cover?.image_url ?? '',
+      title:     cat[`name_${lang}`] || cat.name_he || '',
+      cat,
+    }
+  })
 
   if (filledCats.length === 0) return null
 
@@ -134,7 +138,9 @@ export const PhotoGallery = ({
         <div className="mx-auto mt-4 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {overflowCats.map((cat) => {
             const catImages = images.filter((img) => img.category_id === cat.id)
-            const cover = catImages[0]?.image_url
+            const coverItem = catImages.find((img) => img.media_type !== 'video') ?? catImages[0]
+            const coverUrl = coverItem?.image_url
+            const coverIsVideo = coverItem?.media_type === 'video'
             const title = cat[`name_${lang}`] || cat.name_he || cat.name_en || ''
             return (
               <button
@@ -144,19 +150,30 @@ export const PhotoGallery = ({
                 className="group relative overflow-hidden rounded-xl bg-slate-900 text-start shadow-md transition-shadow hover:shadow-xl"
                 style={{ aspectRatio: '4 / 3' }}
               >
-                {cover && (
-                  <img
-                    src={cover}
-                    alt=""
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                  />
+                {coverUrl && (
+                  coverIsVideo ? (
+                    <video
+                      src={coverUrl}
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      muted
+                      loop
+                      playsInline
+                      autoPlay
+                    />
+                  ) : (
+                    <img
+                      src={coverUrl}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  )
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-4 text-white">
                   <p className="text-lg font-bold leading-tight">{title}</p>
                   <p className="mt-1 text-xs text-white/65">
-                    {catImages.length} {lang === 'he' ? 'תמונות' : 'photos'}
+                    {catImages.length} {lang === 'he' ? 'פריטים' : 'items'}
                   </p>
                 </div>
               </button>
@@ -172,7 +189,10 @@ function getRandomNumberInRange(min, max) {
   return Math.random() * (max - min) + min
 }
 
+const VIDEO_URL_RE = /\.(mp4|webm|mov|avi|m4v)(\?|#|$)/i
+
 export const FolderCard = ({ src, title, className, direction, width, height, onClick, ...props }) => {
+  const isVideo = VIDEO_URL_RE.test(src)
   const [rotation, setRotation] = useState(0)
   const x = useMotionValue(200)
   const y = useMotionValue(200)
@@ -217,13 +237,24 @@ export const FolderCard = ({ src, title, className, direction, width, height, on
       {...props}
     >
       <div className="relative h-full w-full overflow-hidden rounded-3xl shadow-lg">
-        <img
-          className="w-full h-full object-cover absolute inset-0"
-          src={src}
-          alt={title}
-          draggable={false}
-          loading="lazy"
-        />
+        {isVideo ? (
+          <video
+            className="w-full h-full object-cover absolute inset-0"
+            src={src}
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
+        ) : (
+          <img
+            className="w-full h-full object-cover absolute inset-0"
+            src={src}
+            alt={title}
+            draggable={false}
+            loading="lazy"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent rounded-3xl" />
         {title && (
           <div className="absolute bottom-0 inset-x-0 px-3 pb-4 text-center">
