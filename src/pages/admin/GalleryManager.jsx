@@ -3,6 +3,37 @@ import { ArrowDown, ArrowUp, Film, FolderPlus, Pencil, Plus, Trash2, Upload, X }
 import { supabase, supabaseConfigured } from '../../supabase'
 import { uploadToCloudinary, validateMediaFile, isVideoFile } from '../../lib/cloudinary'
 
+/* ── Confirm Dialog ─────────────────────────────────────── */
+function ConfirmDialog({ title, message, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 z-[10003] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-80 mx-4 text-center">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+          <Trash2 size={22} className="text-red-600" />
+        </div>
+        <p className="text-gray-900 font-bold text-base mb-1">{title}</p>
+        <p className="text-gray-500 text-sm mb-6">{message}</p>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
+          >
+            ביטול
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition"
+          >
+            מחק
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Toast ───────────────────────────────────────────────── */
 function Toast({ msg, type = 'info', onDone }) {
   useEffect(() => {
@@ -27,12 +58,17 @@ export default function GalleryManager() {
   const [loading, setLoading]         = useState(true)
   const [uploading, setUploading]     = useState(false)
   const [toast, setToast]             = useState(null)
+  const [confirmDialog, setConfirmDialog] = useState(null)
 
   const [newCatHe, setNewCatHe]       = useState('')
   const [newCatEn, setNewCatEn]       = useState('')
   const [editingCat, setEditingCat]   = useState(null)
 
   const notify = useCallback((msg, type = 'info') => setToast({ msg, type }), [])
+
+  const askConfirm = useCallback((title, message, onConfirm) => {
+    setConfirmDialog({ title, message, onConfirm })
+  }, [])
 
   const loadCategories = useCallback(async () => {
     if (!supabaseConfigured || !supabase) {
@@ -94,20 +130,24 @@ export default function GalleryManager() {
     notify('Saved')
   }
 
-  async function deleteCategory(cat) {
+  function deleteCategory(cat) {
     if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
-    if (!confirm(`Delete folder "${cat.name_en || cat.name_he}"? Items inside will be unlinked.`)) return
-    const { error: unlinkError } = await supabase.from('gallery').update({
-      category_id: null,
-      category_he: '',
-      category_en: '',
-    }).eq('category_id', cat.id)
-    if (unlinkError) { notify('Error unlinking items — ' + unlinkError.message, 'error'); return }
-    const { error } = await supabase.from('gallery_categories').delete().eq('id', cat.id)
-    if (error) { notify('Error deleting — ' + error.message, 'error'); return }
-    setCategories((prev) => prev.filter((c) => c.id !== cat.id))
-    if (selectedCat?.id === cat.id) { setSelectedCat(null); setImages([]) }
-    notify('Folder deleted')
+    askConfirm(
+      `מחק תיקייה "${cat.name_he || cat.name_en}"?`,
+      'התמונות בתוכה יישארו אבל יתנתקו מהקטגוריה.',
+      async () => {
+        setConfirmDialog(null)
+        const { error: unlinkError } = await supabase.from('gallery').update({
+          category_id: null, category_he: '', category_en: '',
+        }).eq('category_id', cat.id)
+        if (unlinkError) { notify('Error unlinking items — ' + unlinkError.message, 'error'); return }
+        const { error } = await supabase.from('gallery_categories').delete().eq('id', cat.id)
+        if (error) { notify('Error deleting — ' + error.message, 'error'); return }
+        setCategories((prev) => prev.filter((c) => c.id !== cat.id))
+        if (selectedCat?.id === cat.id) { setSelectedCat(null); setImages([]) }
+        notify('Folder deleted')
+      }
+    )
   }
 
   async function moveCat(cat, dir) {
@@ -171,12 +211,23 @@ export default function GalleryManager() {
     else notify(`${added} item${added !== 1 ? 's' : ''} uploaded`)
   }
 
-  async function deleteMedia(item) {
+  function deleteMedia(item) {
     if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
-    const { error } = await supabase.from('gallery').delete().eq('id', item.id)
-    if (error) { notify('Error deleting — ' + error.message, 'error'); return }
-    setImages((prev) => prev.filter((i) => i.id !== item.id))
-    notify('Deleted')
+    const label = item.media_type === 'video' ? 'סרטון זה' : 'תמונה זו'
+    askConfirm(
+      `למחוק את ${label}?`,
+      'פעולה זו אינה ניתנת לביטול.',
+      async () => {
+        setConfirmDialog(null)
+        const { error } = await supabase.from('gallery').delete().eq('id', item.id)
+        if (error) { notify('Error deleting — ' + error.message, 'error'); return }
+        if (item.storage_path) {
+          await supabase.storage.from('peeryisroel').remove([item.storage_path])
+        }
+        setImages((prev) => prev.filter((i) => i.id !== item.id))
+        notify('נמחק בהצלחה')
+      }
+    )
   }
 
   async function moveImage(img, dir) {
@@ -379,6 +430,14 @@ export default function GalleryManager() {
       </div>
 
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   )
 }
