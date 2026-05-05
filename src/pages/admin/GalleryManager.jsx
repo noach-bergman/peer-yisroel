@@ -19,14 +19,14 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }) {
             onClick={onCancel}
             className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
           >
-            ביטול
+            Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
             className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition"
           >
-            מחק
+            Delete
           </button>
         </div>
       </div>
@@ -133,8 +133,8 @@ export default function GalleryManager() {
   function deleteCategory(cat) {
     if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
     askConfirm(
-      `מחק תיקייה "${cat.name_he || cat.name_en}"?`,
-      'התמונות בתוכה יישארו אבל יתנתקו מהקטגוריה.',
+      `Delete folder "${cat.name_en || cat.name_he}"?`,
+      'Items inside will be unlinked from this category.',
       async () => {
         setConfirmDialog(null)
         const { error: unlinkError } = await supabase.from('gallery').update({
@@ -213,10 +213,10 @@ export default function GalleryManager() {
 
   function deleteMedia(item) {
     if (!supabaseConfigured || !supabase) { notify('Supabase is not configured.', 'error'); return }
-    const label = item.media_type === 'video' ? 'סרטון זה' : 'תמונה זו'
+    const label = item.media_type === 'video' ? 'this video' : 'this image'
     askConfirm(
-      `למחוק את ${label}?`,
-      'פעולה זו אינה ניתנת לביטול.',
+      `Delete ${label}?`,
+      'This action cannot be undone.',
       async () => {
         setConfirmDialog(null)
         const { error } = await supabase.from('gallery').delete().eq('id', item.id)
@@ -225,7 +225,7 @@ export default function GalleryManager() {
           await supabase.storage.from('peeryisroel').remove([item.storage_path])
         }
         setImages((prev) => prev.filter((i) => i.id !== item.id))
-        notify('נמחק בהצלחה')
+        notify('Deleted')
       }
     )
   }
