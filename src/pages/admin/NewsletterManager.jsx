@@ -1,9 +1,68 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { CheckCircle, Eye, EyeOff, Mail, Send, Trash2, Upload, Users, X } from 'lucide-react'
+import TextAlign from '@tiptap/extension-text-align'
+import { TextStyle } from '@tiptap/extension-text-style'
+import { Image as TiptapImage } from '@tiptap/extension-image'
+import { Extension, Node, mergeAttributes } from '@tiptap/core'
+import { AlignCenter, AlignLeft, AlignRight, CheckCircle, Eye, EyeOff, ImageIcon, Mail, Send, Trash2, Upload, Users, X } from 'lucide-react'
 import { supabase, supabaseConfigured } from '../../supabase'
 import { uploadToCloudinary } from '../../lib/cloudinary'
+
+/* ── Custom FontSize extension ─────────────────────────── */
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addOptions() { return { types: ['textStyle'] } },
+  addGlobalAttributes() {
+    return [{
+      types: this.options.types,
+      attributes: {
+        fontSize: {
+          default: null,
+          parseHTML: el => el.style.fontSize || null,
+          renderHTML: ({ fontSize }) => fontSize ? { style: `font-size:${fontSize}` } : {},
+        },
+      },
+    }]
+  },
+  addCommands() {
+    return {
+      setFontSize: size => ({ chain }) => chain().setMark('textStyle', { fontSize: size }).run(),
+      unsetFontSize: () => ({ chain }) => chain().setMark('textStyle', { fontSize: null }).run(),
+    }
+  },
+})
+
+/* ── Custom ImageLink node (image + href) ──────────────── */
+const ImageLink = Node.create({
+  name: 'imageLink',
+  group: 'block',
+  atom: true,
+  addAttributes() {
+    return {
+      src:   { default: null },
+      href:  { default: '' },
+      alt:   { default: '' },
+      width: { default: '100%' },
+    }
+  },
+  parseHTML() { return [{ tag: 'div[data-image-link]' }] },
+  renderHTML({ HTMLAttributes: { src, href, alt, width } }) {
+    const img = ['img', { src, alt, style: `width:${width};max-width:100%;border-radius:8px;display:block;margin:0 auto;` }]
+    if (href) {
+      return ['div', { 'data-image-link': '', style: 'text-align:center;margin:16px 0;' },
+        ['a', { href, target: '_blank', style: 'display:inline-block;' }, img]
+      ]
+    }
+    return ['div', { 'data-image-link': '', style: 'text-align:center;margin:16px 0;' }, img]
+  },
+  addCommands() {
+    return {
+      insertImageLink: attrs => ({ commands }) =>
+        commands.insertContent({ type: this.name, attrs }),
+    }
+  },
+})
 
 /* ── Toast ───────────────────────────────────────────────── */
 function Toast({ msg, type = 'info', onDone }) {
@@ -16,23 +75,15 @@ function Toast({ msg, type = 'info', onDone }) {
 }
 
 /* ── Build HTML email ───────────────────────────────────── */
-function buildEmailHtml({ bgColor, headerBg, headerImage, titleHe, titleEn, senderName, bodyHtml, lang }) {
+function buildEmailHtml({ bgColor, headerBg, titleHe, titleEn, senderName, bodyHtml, lang }) {
   const isHe = lang === 'he'
   const dir = isHe ? 'rtl' : 'ltr'
   const align = isHe ? 'right' : 'left'
-  const title = isHe ? (titleHe || "פאר ישראל") : (titleEn || "Pe'er Yisroel")
+  const title = isHe ? (titleHe || 'פאר ישראל') : (titleEn || "Pe'er Yisroel")
   const orgLabel = isHe ? 'ישיבת פאר ישראל' : "Pe'er Yisroel Yeshiva"
   const footerText = isHe
     ? `שלחנו אליך אימייל זה כי נרשמת לרשימת התפוצה של ${senderName || 'ישיבת פאר ישראל'}`
     : `You received this because you subscribed to ${senderName || "Pe'er Yisroel"}'s newsletter.`
-  const copyright = `© ${new Date().getFullYear()} Pe'er Yisroel`
-
-  const headerSection = headerImage
-    ? `<div style="background:url('${headerImage}') center/cover no-repeat;min-height:180px;"></div>`
-    : `<div style="background:${headerBg || '#162A55'};padding:40px 32px;text-align:center;">
-        <p style="color:#C48918;font-size:13px;letter-spacing:3px;text-transform:uppercase;margin:0 0 8px;">${orgLabel}</p>
-        <h1 style="color:#fff;font-size:26px;font-weight:700;margin:0;font-family:Georgia,serif;">${title}</h1>
-       </div>`
 
   return `<!DOCTYPE html>
 <html lang="${lang}" dir="${dir}">
@@ -40,19 +91,28 @@ function buildEmailHtml({ bgColor, headerBg, headerImage, titleHe, titleEn, send
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title}</title>
+<style>
+  a img { border: none; }
+  img { max-width: 100%; height: auto; }
+</style>
 </head>
 <body style="margin:0;padding:0;background:${bgColor || '#f4f0e8'};font-family:Georgia,serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:${bgColor || '#f4f0e8'};">
   <tr><td align="center" style="padding:32px 16px;">
     <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-      <tr><td>${headerSection}</td></tr>
+      <tr><td>
+        <div style="background:${headerBg || '#162A55'};padding:40px 32px;text-align:center;">
+          <p style="color:#C48918;font-size:13px;letter-spacing:3px;text-transform:uppercase;margin:0 0 8px;">${orgLabel}</p>
+          <h1 style="color:#fff;font-size:26px;font-weight:700;margin:0;font-family:Georgia,serif;">${title}</h1>
+        </div>
+      </td></tr>
       <tr><td style="padding:40px 40px 32px;direction:${dir};text-align:${align};">
         <div style="color:#1a1a1a;font-size:16px;line-height:1.8;">${bodyHtml}</div>
       </td></tr>
       <tr><td style="padding:0 40px;"><div style="height:1px;background:#e8dfc8;"></div></td></tr>
       <tr><td style="padding:24px 40px;text-align:center;">
         <p style="color:#888;font-size:12px;margin:0 0 4px;">${footerText}</p>
-        <p style="color:#888;font-size:12px;margin:0;">${copyright}</p>
+        <p style="color:#888;font-size:12px;margin:0;">© ${new Date().getFullYear()} Pe'er Yisroel</p>
       </td></tr>
     </table>
   </td></tr>
@@ -71,7 +131,7 @@ function ColorPicker({ value, onChange, label }) {
         {PRESETS.map(c => (
           <button key={c} type="button" onClick={() => onChange(c)}
             style={{ background: c }}
-            className={`w-7 h-7 rounded-full border-2 transition ${value === c ? 'border-brand-gold scale-110' : 'border-transparent hover:scale-105'} ${c === '#ffffff' ? 'border-gray-200' : ''}`}
+            className={`w-7 h-7 rounded-full border-2 transition ${value === c ? 'border-brand-gold scale-110' : 'border-transparent hover:scale-105'} ${c === '#ffffff' ? '!border-gray-200' : ''}`}
           />
         ))}
         <input type="color" value={value} onChange={e => onChange(e.target.value)}
@@ -81,25 +141,145 @@ function ColorPicker({ value, onChange, label }) {
   )
 }
 
+/* ── Image insert modal ─────────────────────────────────── */
+function ImageModal({ onInsert, onClose }) {
+  const fileRef = useRef(null)
+  const [src, setSrc] = useState('')
+  const [href, setHref] = useState('https://peeryisroel.org/gallery')
+  const [width, setWidth] = useState('100%')
+  const [uploading, setUploading] = useState(false)
+
+  async function handleUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try { setSrc(await uploadToCloudinary(file)) }
+    catch {}
+    finally { setUploading(false) }
+  }
+
+  const inp = 'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/20 transition-colors'
+
+  return (
+    <div className="fixed inset-0 z-[10010] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-96 mx-4 space-y-4" dir="ltr">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-gray-900">Insert Image</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition"><X size={16} /></button>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-gray-500">Image</label>
+          <div className="flex gap-2">
+            <input value={src} onChange={e => setSrc(e.target.value)} placeholder="https://..." className={inp} />
+            <button onClick={() => fileRef.current?.click()} disabled={uploading}
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition whitespace-nowrap">
+              <Upload size={13} />
+              {uploading ? '...' : 'Upload'}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+          </div>
+          {src && <img src={src} alt="" className="mt-2 h-24 w-full object-cover rounded-lg border border-gray-200" />}
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-gray-500">Link to (click goes to...)</label>
+          <input value={href} onChange={e => setHref(e.target.value)} placeholder="https://peeryisroel.org/gallery" className={inp} />
+          <p className="text-xs text-gray-400">Leave blank for no link</p>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-gray-500">Size</label>
+          <select value={width} onChange={e => setWidth(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-gold focus:outline-none transition-colors">
+            <option value="30%">Small (30%)</option>
+            <option value="50%">Medium (50%)</option>
+            <option value="80%">Large (80%)</option>
+            <option value="100%">Full Width</option>
+          </select>
+        </div>
+
+        <div className="flex gap-3 pt-1">
+          <button onClick={onClose} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">Cancel</button>
+          <button onClick={() => { if (src) { onInsert({ src, href, width }); onClose() } }}
+            disabled={!src}
+            className="flex-1 rounded-xl bg-brand-gold py-2.5 text-sm font-semibold text-white hover:bg-brand-gold-hover disabled:opacity-40 transition">
+            Insert
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Editor Toolbar ─────────────────────────────────────── */
-function Toolbar({ editor }) {
+const FONT_SIZES = [
+  { label: 'Small', value: '13px' },
+  { label: 'Normal', value: '16px' },
+  { label: 'Large', value: '20px' },
+  { label: 'XLarge', value: '26px' },
+]
+
+function Toolbar({ editor, onImageClick }) {
   if (!editor) return null
-  const btn = (active, fn, label) => (
-    <button type="button" onClick={fn}
+
+  const btn = (active, fn, content, title) => (
+    <button type="button" onClick={fn} title={title}
       className={`px-2.5 py-1 rounded text-sm font-medium transition ${active ? 'bg-brand-primary text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-      {label}
+      {content}
     </button>
   )
+
+  const iconBtn = (active, fn, Icon, title) => (
+    <button type="button" onClick={fn} title={title}
+      className={`p-1.5 rounded transition ${active ? 'bg-brand-primary text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+      <Icon size={14} />
+    </button>
+  )
+
   return (
-    <div className="flex flex-wrap gap-1 p-2 border-b border-gray-200 bg-gray-50">
-      {btn(editor.isActive('bold'), () => editor.chain().focus().toggleBold().run(), 'B')}
-      {btn(editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run(), 'I')}
+    <div className="flex flex-wrap items-center gap-0.5 p-2 border-b border-gray-200 bg-gray-50">
+      {/* Text style */}
+      {btn(editor.isActive('bold'), () => editor.chain().focus().toggleBold().run(), <b>B</b>)}
+      {btn(editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run(), <i>I</i>)}
+      <div className="w-px h-4 bg-gray-300 mx-1" />
+
+      {/* Headings */}
       {btn(editor.isActive('heading', { level: 2 }), () => editor.chain().focus().toggleHeading({ level: 2 }).run(), 'H2')}
       {btn(editor.isActive('heading', { level: 3 }), () => editor.chain().focus().toggleHeading({ level: 3 }).run(), 'H3')}
+      <div className="w-px h-4 bg-gray-300 mx-1" />
+
+      {/* Font size */}
+      <select
+        onChange={e => {
+          if (e.target.value) editor.chain().focus().setFontSize(e.target.value).run()
+          else editor.chain().focus().unsetFontSize().run()
+        }}
+        className="rounded border border-gray-200 bg-white text-xs text-gray-600 px-1.5 py-1 focus:outline-none focus:border-brand-gold"
+        title="Font size">
+        <option value="">Size</option>
+        {FONT_SIZES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+      </select>
+      <div className="w-px h-4 bg-gray-300 mx-1" />
+
+      {/* Alignment */}
+      {iconBtn(editor.isActive({ textAlign: 'left' }), () => editor.chain().focus().setTextAlign('left').run(), AlignLeft, 'Align left')}
+      {iconBtn(editor.isActive({ textAlign: 'center' }), () => editor.chain().focus().setTextAlign('center').run(), AlignCenter, 'Center')}
+      {iconBtn(editor.isActive({ textAlign: 'right' }), () => editor.chain().focus().setTextAlign('right').run(), AlignRight, 'Align right')}
+      <div className="w-px h-4 bg-gray-300 mx-1" />
+
+      {/* Lists */}
       {btn(editor.isActive('bulletList'), () => editor.chain().focus().toggleBulletList().run(), '• List')}
       {btn(editor.isActive('orderedList'), () => editor.chain().focus().toggleOrderedList().run(), '1. List')}
       <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()}
         className="px-2.5 py-1 rounded text-sm text-gray-600 hover:bg-gray-100 transition">—</button>
+      <div className="w-px h-4 bg-gray-300 mx-1" />
+
+      {/* Image */}
+      <button type="button" onClick={onImageClick}
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-sm font-medium text-gray-600 hover:bg-gray-100 transition">
+        <ImageIcon size={13} /> Image
+      </button>
     </div>
   )
 }
@@ -131,30 +311,35 @@ function LangTabs({ value, onChange }) {
   )
 }
 
+/* ── TipTap extensions ──────────────────────────────────── */
+const EXTENSIONS = [
+  StarterKit,
+  TextAlign.configure({ types: ['heading', 'paragraph'] }),
+  TextStyle,
+  FontSize,
+  ImageLink,
+]
+
 /* ── Main ────────────────────────────────────────────────── */
 export default function NewsletterManager() {
-  const fileRef = useRef(null)
   const [subscribers, setSubscribers] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [sending, setSending] = useState(false)
   const [testing, setTesting] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [panel, setPanel] = useState('list')
   const [showPreview, setShowPreview] = useState(false)
+  const [showImageModal, setShowImageModal] = useState(false)
+  const [activeLangForImage, setActiveLangForImage] = useState('he')
   const [langTab, setLangTab] = useState('he')
   const [testSent, setTestSent] = useState(false)
   const [testEmail, setTestEmail] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
 
-  // Shared design
   const [bgColor, setBgColor] = useState('#f4f0e8')
   const [headerBg, setHeaderBg] = useState('#162A55')
-  const [headerImage, setHeaderImage] = useState('')
   const [senderName, setSenderName] = useState("Pe'er Yisroel")
   const [senderEmail, setSenderEmail] = useState('')
-
-  // Per-language content
   const [subjectHe, setSubjectHe] = useState('')
   const [subjectEn, setSubjectEn] = useState('')
   const [titleHe, setTitleHe] = useState('')
@@ -163,12 +348,12 @@ export default function NewsletterManager() {
   const notify = useCallback((msg, type = 'info') => setToast({ msg, type }), [])
 
   const editorHe = useEditor({
-    extensions: [StarterKit],
+    extensions: EXTENSIONS,
     content: '',
     editorProps: { attributes: { class: 'min-h-[180px] focus:outline-none text-sm text-gray-800 p-4', dir: 'rtl' } },
   })
   const editorEn = useEditor({
-    extensions: [StarterKit],
+    extensions: EXTENSIONS,
     content: '',
     editorProps: { attributes: { class: 'min-h-[180px] focus:outline-none text-sm text-gray-800 p-4', dir: 'ltr' } },
   })
@@ -185,24 +370,11 @@ export default function NewsletterManager() {
 
   useEffect(() => { load() }, [load])
 
-  // Prefill test email with admin's email
   useEffect(() => {
     supabase?.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.email) setTestEmail(session.user.email)
     })
   }, [])
-
-  async function handleUpload(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    try {
-      const url = await uploadToCloudinary(file)
-      setHeaderImage(url)
-      notify('Image uploaded')
-    } catch { notify('Upload failed', 'error') }
-    finally { setUploading(false) }
-  }
 
   async function handleDeactivate(id) {
     const { error } = await supabase.from('newsletter_subscribers').update({ active: false }).eq('id', id)
@@ -233,8 +405,8 @@ export default function NewsletterManager() {
       token: session?.access_token,
       body: {
         subjectHe, subjectEn,
-        htmlContentHe: buildEmailHtml({ bgColor, headerBg, headerImage, titleHe, titleEn, senderName, bodyHtml: editorHe?.getHTML() ?? '', lang: 'he' }),
-        htmlContentEn: buildEmailHtml({ bgColor, headerBg, headerImage, titleHe, titleEn, senderName, bodyHtml: editorEn?.getHTML() ?? '', lang: 'en' }),
+        htmlContentHe: buildEmailHtml({ bgColor, headerBg, titleHe, titleEn, senderName, bodyHtml: editorHe?.getHTML() ?? '', lang: 'he' }),
+        htmlContentEn: buildEmailHtml({ bgColor, headerBg, titleHe, titleEn, senderName, bodyHtml: editorEn?.getHTML() ?? '', lang: 'en' }),
         senderName, senderEmail,
       },
     }
@@ -253,7 +425,7 @@ export default function NewsletterManager() {
       const result = await resp.json()
       if (resp.ok) {
         setTestSent(true)
-        notify(`Test sent to ${result.sentTo} — check Hebrew + English versions`, 'success')
+        notify(`Test sent to ${result.sentTo}`, 'success')
       } else notify(result.error || 'Test failed', 'error')
     } catch { notify('Network error', 'error') }
     finally { setTesting(false) }
@@ -274,7 +446,7 @@ export default function NewsletterManager() {
         notify(`Sent to ${result.sent} subscriber${result.sent !== 1 ? 's' : ''}${result.failed ? ` (${result.failed} failed)` : ''}`, 'success')
         setSubjectHe(''); setSubjectEn(''); setTitleHe(''); setTitleEn('')
         editorHe?.commands.clearContent(); editorEn?.commands.clearContent()
-        setHeaderImage(''); setTestSent(false); setPanel('list')
+        setTestSent(false); setPanel('list')
       } else notify(result.error || 'Failed to send', 'error')
     } catch { notify('Network error', 'error') }
     finally { setSending(false) }
@@ -294,7 +466,6 @@ export default function NewsletterManager() {
 
   return (
     <div className="p-8 max-w-5xl" dir="ltr">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Newsletter</h1>
@@ -389,7 +560,7 @@ export default function NewsletterManager() {
             </div>
           </div>
 
-          {/* Subject & Title — per language */}
+          {/* Subject & Title */}
           <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Subject & Title</h2>
@@ -427,26 +598,9 @@ export default function NewsletterManager() {
               <ColorPicker value={bgColor} onChange={setBgColor} label="Background Color" />
               <ColorPicker value={headerBg} onChange={setHeaderBg} label="Header Color" />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-2">Header Image (optional — replaces color header)</label>
-              <div className="flex items-center gap-3">
-                <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-                  className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition disabled:opacity-50">
-                  <Upload size={15} />
-                  {uploading ? 'Uploading...' : 'Upload Image'}
-                </button>
-                {headerImage && (
-                  <div className="flex items-center gap-2">
-                    <img src={headerImage} alt="" className="h-10 w-20 object-cover rounded-lg border border-gray-200" />
-                    <button onClick={() => setHeaderImage('')} className="text-gray-400 hover:text-red-500 transition"><X size={14} /></button>
-                  </div>
-                )}
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-              </div>
-            </div>
           </div>
 
-          {/* Body editor — per language */}
+          {/* Body editors */}
           <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -458,19 +612,22 @@ export default function NewsletterManager() {
                 {showPreview ? <><EyeOff size={13} /> Hide Preview</> : <><Eye size={13} /> Show Preview</>}
               </button>
             </div>
-            <Toolbar editor={activeEditor} />
-            <div className={`prose prose-sm max-w-none ${langTab === 'he' ? 'hidden' : ''}`}>
-              <EditorContent editor={editorEn} />
+            <Toolbar
+              editor={activeEditor}
+              onImageClick={() => { setActiveLangForImage(langTab); setShowImageModal(true) }}
+            />
+            <div className={langTab === 'en' ? 'hidden' : ''}>
+              <EditorContent editor={editorHe} className="prose prose-sm max-w-none" />
             </div>
-            <div className={`prose prose-sm max-w-none ${langTab === 'en' ? 'hidden' : ''}`}>
-              <EditorContent editor={editorHe} />
+            <div className={langTab === 'he' ? 'hidden' : ''}>
+              <EditorContent editor={editorEn} className="prose prose-sm max-w-none" />
             </div>
           </div>
 
           {/* Preview */}
           {showPreview && (
             <EmailPreview
-              config={{ bgColor, headerBg, headerImage, titleHe, titleEn, senderName }}
+              config={{ bgColor, headerBg, titleHe, titleEn, senderName }}
               htmlHe={editorHe?.getHTML() ?? ''}
               htmlEn={editorEn?.getHTML() ?? ''}
               lang={langTab}
@@ -490,7 +647,6 @@ export default function NewsletterManager() {
 
           {/* Action bar */}
           <div className="rounded-2xl border border-gray-100 bg-white shadow-sm px-6 py-4 space-y-3">
-            {/* Test email row */}
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Test email address</label>
@@ -505,27 +661,32 @@ export default function NewsletterManager() {
                 </button>
               </div>
             </div>
-
-            {/* Send to all row */}
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
               <p className="text-sm text-gray-500">
                 Will send to <span className="font-semibold text-brand-primary">{active}</span> subscribers
                 {active > 0 && <span className="text-gray-400"> ({activeHe} Hebrew · {activeEn} English)</span>}
               </p>
-              <button
-                onClick={() => setShowConfirm(true)}
-                disabled={sending || active === 0 || !testSent}
-                title={!testSent ? 'Send a test first to verify both versions' : ''}
+              <button onClick={() => setShowConfirm(true)} disabled={sending || active === 0 || !testSent}
+                title={!testSent ? 'Send a test first' : ''}
                 className="flex items-center gap-2 rounded-xl bg-brand-gold px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-gold-hover disabled:opacity-40 transition-colors">
                 <Send size={15} />
                 {sending ? 'Sending...' : 'Send to All'}
               </button>
             </div>
-            {!testSent && (
-              <p className="text-xs text-gray-400 text-right">Send a test first to enable this button</p>
-            )}
+            {!testSent && <p className="text-xs text-gray-400 text-right">Send a test first to enable this button</p>}
           </div>
         </div>
+      )}
+
+      {/* Image modal */}
+      {showImageModal && (
+        <ImageModal
+          onInsert={attrs => {
+            const editor = activeLangForImage === 'he' ? editorHe : editorEn
+            editor?.chain().focus().insertImageLink(attrs).run()
+          }}
+          onClose={() => setShowImageModal(false)}
+        />
       )}
 
       {/* Confirm dialog */}
@@ -533,10 +694,8 @@ export default function NewsletterManager() {
         <div className="fixed inset-0 z-[10003] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-80 mx-4 text-center" dir="ltr">
             <p className="text-gray-900 font-bold text-base mb-1">Send to All Subscribers?</p>
-            <p className="text-gray-500 text-sm mb-1">
-              {activeHe} Hebrew · {activeEn} English
-            </p>
-            <p className="text-gray-400 text-xs mb-6">Each subscriber will receive the email in their preferred language.</p>
+            <p className="text-gray-500 text-sm mb-1">{activeHe} Hebrew · {activeEn} English</p>
+            <p className="text-gray-400 text-xs mb-6">Each subscriber receives their language version.</p>
             <div className="flex gap-3">
               <button onClick={() => setShowConfirm(false)} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">Cancel</button>
               <button onClick={doSendAll} className="flex-1 rounded-xl bg-brand-gold py-2.5 text-sm font-semibold text-white hover:bg-brand-gold-hover transition">Send</button>
