@@ -13,8 +13,8 @@ export default async function handler(req, res) {
   if (!token) return res.status(401).json({ error: 'No token' })
 
   const supabaseAnon = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
+    process.env.VITE_SUPABASE_URL,
+    process.env.VITE_SUPABASE_ANON_KEY
   )
   const { data: { user }, error: authError } = await supabaseAnon.auth.getUser(token)
   if (authError || !user) {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
   // Fetch active subscribers with service role (bypasses RLS)
   const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL,
+    process.env.VITE_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
   const { data: subscribers, error: fetchError } = await supabaseAdmin
