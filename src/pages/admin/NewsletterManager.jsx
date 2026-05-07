@@ -3,8 +3,8 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyle } from '@tiptap/extension-text-style'
-import { Image as TiptapImage } from '@tiptap/extension-image'
-import { Extension, Node, mergeAttributes } from '@tiptap/core'
+import { Color } from '@tiptap/extension-color'
+import { Extension, Node } from '@tiptap/core'
 import { AlignCenter, AlignLeft, AlignRight, CheckCircle, Eye, EyeOff, ImageIcon, Mail, Send, Trash2, Upload, Users, X } from 'lucide-react'
 import { supabase, supabaseConfigured } from '../../supabase'
 import { uploadToCloudinary } from '../../lib/cloudinary'
@@ -280,6 +280,23 @@ function Toolbar({ editor, onImageClick }) {
         className="flex items-center gap-1.5 px-2.5 py-1 rounded text-sm font-medium text-gray-600 hover:bg-gray-100 transition">
         <ImageIcon size={13} /> Image
       </button>
+      <div className="w-px h-4 bg-gray-300 mx-1" />
+
+      {/* Text color */}
+      <label className="flex items-center gap-1.5 px-2 py-1 rounded text-sm font-medium text-gray-600 hover:bg-gray-100 transition cursor-pointer" title="Text color">
+        <span className="font-bold" style={{ color: editor.getAttributes('textStyle').color || '#1a1a1a' }}>A</span>
+        <input
+          type="color"
+          defaultValue="#1a1a1a"
+          onChange={e => editor.chain().focus().setColor(e.target.value).run()}
+          className="w-4 h-4 rounded cursor-pointer border-0 p-0 bg-transparent"
+          title="Text color"
+        />
+      </label>
+      <button type="button" onClick={() => editor.chain().focus().unsetColor().run()}
+        className="px-2 py-1 rounded text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition" title="Reset color">
+        ✕
+      </button>
     </div>
   )
 }
@@ -317,6 +334,7 @@ const EXTENSIONS = [
   TextAlign.configure({ types: ['heading', 'paragraph'] }),
   TextStyle,
   FontSize,
+  Color,
   ImageLink,
 ]
 
