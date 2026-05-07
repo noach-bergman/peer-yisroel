@@ -357,7 +357,7 @@ export default function NewsletterManager() {
   const [bgColor, setBgColor] = useState('#f4f0e8')
   const [headerBg, setHeaderBg] = useState('#162A55')
   const [senderName, setSenderName] = useState("Pe'er Yisroel")
-  const [senderEmail, setSenderEmail] = useState('')
+  const [senderEmail, setSenderEmail] = useState('newsletter@peeryisroel.org')
   const [subjectHe, setSubjectHe] = useState('')
   const [subjectEn, setSubjectEn] = useState('')
   const [titleHe, setTitleHe] = useState('')
