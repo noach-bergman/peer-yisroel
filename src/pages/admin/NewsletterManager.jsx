@@ -153,7 +153,7 @@ function ImageModal({ onInsert, onClose }) {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
-    try { setSrc(await uploadToCloudinary(file)) }
+    try { const { secure_url } = await uploadToCloudinary(file); setSrc(secure_url) }
     catch {}
     finally { setUploading(false) }
   }
