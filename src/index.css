@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 @keyframes scroll-left {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
@@ -36,7 +37,7 @@
     margin: 0;
     font-family: 'Frank Ruhl Libre', serif;
     -webkit-font-smoothing: antialiased;
-    background-color: #F2E8D8;
+    background-color: #F0E6D2;
   }
   html[dir='ltr'] body {
     font-family: 'Inter', sans-serif;
@@ -77,4 +78,12 @@
   .card {
     @apply bg-white rounded-xl shadow-md p-6;
   }
+}
+
+html[dir='ltr'] .heading-display,
+html[dir='ltr'] .heading-page,
+html[dir='ltr'] .heading-section,
+html[dir='ltr'] .heading-subsection {
+  font-family: 'EB Garamond', Georgia, serif;
+  letter-spacing: -0.01em;
 }

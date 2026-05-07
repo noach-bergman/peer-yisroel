@@ -28,7 +28,7 @@ export default function Navbar() {
   }, [location.pathname])
 
   if (!content) {
-    return <header className="fixed top-0 inset-x-0 z-50 h-16 bg-transparent md:h-20" />
+    return <header className="fixed top-0 inset-x-0 z-50 h-20 bg-transparent md:h-24" />
   }
 
   const toggleLang = () => {
@@ -46,6 +46,7 @@ export default function Navbar() {
     { to: '/', field: `nav_home_${lang}`, fallback: content[`nav_home_${lang}`] },
     { to: '/about', field: `nav_about_${lang}`, fallback: content[`nav_about_${lang}`] },
     { to: '/gallery', field: `nav_gallery_${lang}`, fallback: content[`nav_gallery_${lang}`] },
+    { to: '/updates', field: `nav_updates_${lang}`, fallback: content[`nav_updates_${lang}`] || (lang === 'he' ? 'עדכונים' : 'Updates') },
     { to: '/donate', field: `nav_donate_${lang}`, fallback: content[`nav_donate_${lang}`] },
     { to: '/contact', field: `nav_contact_${lang}`, fallback: content[`nav_contact_${lang}`] },
   ]
@@ -60,7 +61,7 @@ export default function Navbar() {
     : location.pathname === '/'
       ? 'home'
       : location.pathname.split('/')[1]
-  const hasDarkHero = ['home', 'about', 'gallery', 'donate', 'contact'].includes(pageKey)
+  const hasDarkHero = ['home', 'about', 'gallery', 'updates', 'donate', 'contact'].includes(pageKey)
   const darkNav = scrolled || open
   const heroTop = !darkNav && hasDarkHero
   const onDarkSurface = darkNav || heroTop
@@ -79,13 +80,13 @@ export default function Navbar() {
   return (
     <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${headerClass}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between md:h-20">
+        <div className="flex h-20 items-center justify-between md:h-24">
           <Link to={toPath('/')} className="flex items-center">
             <img
               key={lang}
               src={lang === 'he' ? '/עברית.jpeg' : '/English.png'}
               alt={lang === 'he' ? 'פאר ישראל' : "Pe'er Yisroel"}
-              className="h-12 md:h-14 w-auto object-contain"
+              className="h-14 md:h-18 w-auto object-contain"
             />
           </Link>
 

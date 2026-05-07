@@ -5,7 +5,6 @@ import AnimatedSection from '../components/AnimatedSection'
 import Card from '../components/Card'
 import CountUp from '../components/CountUp'
 import EditableText from '../components/EditableText'
-import GoldParticles from '../components/GoldParticles'
 import PageHero from '../components/PageHero'
 import PageLoading from '../components/PageLoading'
 import { createId } from '../content/defaultContent'
@@ -35,6 +34,16 @@ export default function Donate() {
           {content[`subtitle_${lang}`]}
         </EditableText>
       </PageHero>
+      {/* Quote first — warmth before the ask */}
+      <AnimatedSection delay={0.05} variant="fadeUp" className="bg-brand-neutral-50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14 text-center">
+          <Star size={28} className="text-brand-gold mx-auto mb-5" />
+          <EditableText field={`quote_${lang}`} tag="p" className="text-xl md:text-2xl text-brand-primary leading-relaxed font-medium block" multiline>
+            {content[`quote_${lang}`]}
+          </EditableText>
+        </div>
+      </AnimatedSection>
+
       <div className="py-16">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -105,45 +114,33 @@ export default function Donate() {
           <AnimatedSection delay={0.15} variant="slideLeft">
             <Card hover className="h-full">
               <Building2 size={36} className="text-brand-gold mb-4" />
-              <EditableText field={`bank_title_${lang}`} tag="h2" className="heading-subsection mb-4 block">
+              <EditableText field={`bank_title_${lang}`} tag="h2" className="heading-subsection mb-5 block">
                 {content[`bank_title_${lang}`]}
               </EditableText>
-              <div className="space-y-3 text-sm">
+              <div className="space-y-4 text-sm">
                 {[
                   { labelField: `bank_account_label_${lang}`, valueField: `bank_account_name_${lang}`, value: settings[`bank_account_name_${lang}`] },
                   { labelField: `bank_name_label_${lang}`, valueField: `bank_name_${lang}`, value: settings[`bank_name_${lang}`] || '—' },
                   { labelField: `bank_number_label_${lang}`, valueField: 'bank_account', value: settings.bank_account || '—' },
                   { labelField: `bank_branch_label_${lang}`, valueField: 'bank_branch', value: settings.bank_branch || '—' },
                 ].map(({ labelField, valueField, value }) => (
-                  <div key={labelField} className="flex flex-col sm:flex-row sm:items-center gap-1">
-                    <EditableText field={labelField} tag="span" className="font-semibold text-gray-600 sm:w-32 shrink-0">
+                  <div key={labelField}>
+                    <EditableText field={labelField} tag="span" className="block text-xs uppercase tracking-wider text-gray-400 mb-0.5">
                       {content[labelField]}
                     </EditableText>
-                    <span>:</span>
-                    <EditableText scope="settings" field={valueField} tag="span" className="text-gray-800 font-mono">
+                    <EditableText scope="settings" field={valueField} tag="span" className="text-gray-800 font-medium">
                       {value}
                     </EditableText>
                   </div>
                 ))}
               </div>
-              <EditableText field={`bank_note_${lang}`} tag="p" className="text-xs text-gray-500 mt-4 block">
+              <EditableText field={`bank_note_${lang}`} tag="p" className="text-xs text-gray-400 mt-6 block">
                 {content[`bank_note_${lang}`]}
               </EditableText>
             </Card>
           </AnimatedSection>
         </div>
 
-        <AnimatedSection delay={0.2} variant="fadeUp">
-          <div className="relative overflow-hidden rounded-2xl">
-            <GoldParticles />
-            <Card className="relative z-10 bg-brand-neutral-50 text-center">
-              <Star size={32} className="text-brand-gold mx-auto mb-3" />
-              <EditableText field={`quote_${lang}`} tag="p" className="text-gray-700 leading-relaxed block" multiline>
-                {content[`quote_${lang}`]}
-              </EditableText>
-            </Card>
-          </div>
-        </AnimatedSection>
       </div>
       </div>
     </div>

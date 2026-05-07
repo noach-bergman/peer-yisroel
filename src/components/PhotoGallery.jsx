@@ -88,16 +88,13 @@ export const PhotoGallery = ({
   const fallbackHeadingHighlight = lang === 'he' ? 'סיפורים שלנו' : 'Stories'
 
   return (
-    <div className="mt-10 mb-4 relative">
-      <p className="my-2 text-center text-xs font-light uppercase tracking-widest text-slate-600">
-        {kicker || fallbackKicker}
-      </p>
-      <h3 className="z-20 mx-auto max-w-2xl justify-center bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text py-3 text-center text-4xl text-transparent md:text-5xl">
+    <div className="mt-2 mb-2 relative">
+      <h3 className="z-20 mx-auto max-w-2xl pb-1 text-center text-2xl font-semibold text-white md:text-3xl">
         {headingPrefix || fallbackHeadingPrefix}
-        <span className="text-rose-500">{headingHighlight || fallbackHeadingHighlight}</span>
+        <span className="text-amber-400">{headingHighlight || fallbackHeadingHighlight}</span>
       </h3>
 
-      <div ref={stageRef} className="relative mb-8 h-[350px] w-full items-center justify-center lg:flex">
+      <div ref={stageRef} className="relative mb-2 h-[260px] w-full items-center justify-center lg:flex">
         <motion.div
           className="relative mx-auto flex w-full max-w-7xl justify-center"
           initial={{ opacity: 0 }}
@@ -256,6 +253,14 @@ export const FolderCard = ({ src, title, className, direction, width, height, on
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent rounded-3xl" />
+        {/* Dog-ear fold — signals this card is a folder */}
+        <div
+          className="absolute top-0 end-0 w-12 h-12 pointer-events-none"
+          style={{
+            background: 'linear-gradient(225deg, rgba(255,255,255,0.4) 50%, transparent 50%)',
+            borderStartEndRadius: '1.5rem',
+          }}
+        />
         {title && (
           <div className="absolute bottom-0 inset-x-0 px-3 pb-4 text-center">
             <p className="text-white font-bold text-sm leading-tight drop-shadow-lg">{title}</p>

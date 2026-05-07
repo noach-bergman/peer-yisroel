@@ -4,7 +4,6 @@ import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { BookOpen, Star, Users } from 'lucide-react'
 import AnimatedSection from '../components/AnimatedSection'
-import Card from '../components/Card'
 import CountUp from '../components/CountUp'
 import EditableText from '../components/EditableText'
 import GoldParticles from '../components/GoldParticles'
@@ -33,8 +32,6 @@ function AnimText({ field, tag = 'p', className = '', multiline = false, per = '
     </div>
   )
 }
-const CARD_VARIANTS = ['slideRight', 'scaleIn', 'slideLeft']
-
 function smartPath(path, edit) {
   return edit.isEditMode ? buildAdminPathFromPublicPath(path) : path
 }
@@ -199,20 +196,24 @@ export default function Home() {
             </AnimText>
           </AnimatedSection>
 
-          <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="mt-16 text-start">
             {(content.featureCards || []).map((card, index) => {
               const Icon = ICONS[card.icon] || BookOpen
               return (
-                <AnimatedSection key={card.id} delay={index * 0.12} variant={CARD_VARIANTS[index % CARD_VARIANTS.length]}>
-                  <Card hover className="relative text-center h-full">
-                    <Icon size={36} className="text-brand-gold mx-auto mb-3" />
-                    <EditableCollectionText collectionKey="featureCards" item={card} field={`title_${lang}`} tag="h4" className="font-bold text-brand-primary mb-2">
-                      {card[`title_${lang}`]}
-                    </EditableCollectionText>
-                    <EditableCollectionText collectionKey="featureCards" item={card} field={`text_${lang}`} tag="p" className="text-gray-600 text-sm" multiline>
-                      {card[`text_${lang}`]}
-                    </EditableCollectionText>
-                  </Card>
+                <AnimatedSection key={card.id} delay={index * 0.12} variant="fadeUp">
+                  <div className={`flex items-start gap-6 py-10 ${index > 0 ? 'border-t border-brand-cream-dark' : ''}`}>
+                    <div className="flex-1 pt-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Icon size={18} className="text-brand-gold shrink-0" />
+                        <EditableCollectionText collectionKey="featureCards" item={card} field={`title_${lang}`} tag="h4" className="font-bold text-brand-primary text-lg leading-snug">
+                          {card[`title_${lang}`]}
+                        </EditableCollectionText>
+                      </div>
+                      <EditableCollectionText collectionKey="featureCards" item={card} field={`text_${lang}`} tag="p" className="text-gray-600 leading-relaxed" multiline>
+                        {card[`text_${lang}`]}
+                      </EditableCollectionText>
+                    </div>
+                  </div>
                 </AnimatedSection>
               )
             })}
@@ -249,21 +250,26 @@ export default function Home() {
         </section>
       )}
 
-      <section className="relative section-y bg-brand-primary overflow-hidden">
-        <GoldParticles />
+      <section className="relative section-y bg-brand-primary-dark overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-primary/60 to-transparent pointer-events-none" />
         <div className="relative z-10 max-w-2xl mx-auto px-4 text-center">
           <AnimatedSection variant="fadeUp">
+            <div className="flex items-center justify-center gap-3 mb-8" aria-hidden="true">
+              <span className="block h-px w-16 bg-brand-gold/40" />
+              <span className="text-brand-gold/60 text-lg">✦</span>
+              <span className="block h-px w-16 bg-brand-gold/40" />
+            </div>
             <AnimText field={`cta_title_${lang}`} tag="h2" per="word" preset="slide" className="heading-section text-white mb-4">
               {content[`cta_title_${lang}`]}
             </AnimText>
-            <AnimText field={`cta_text_${lang}`} tag="p" per="word" preset="fade" delay={0.15} multiline className="text-white/80 text-lg mb-8">
+            <AnimText field={`cta_text_${lang}`} tag="p" per="word" preset="fade" delay={0.15} multiline className="text-white/75 text-lg mb-10">
               {content[`cta_text_${lang}`]}
             </AnimText>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to={smartPath('/donate', edit)} className="btn-primary text-lg px-8 py-3">
+            <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
+              <Link to={smartPath('/donate', edit)} className="btn-primary text-lg px-10 py-3">
                 <EditableText field={`cta_donate_${lang}`}>{content[`cta_donate_${lang}`]}</EditableText>
               </Link>
-              <Link to={smartPath('/contact', edit)} className="btn-outline-inverse text-lg px-8 py-3">
+              <Link to={smartPath('/contact', edit)} className="text-white/70 hover:text-white text-base underline underline-offset-4 decoration-white/30 hover:decoration-white/70 transition-colors duration-200">
                 <EditableText field={`cta_contact_${lang}`}>{content[`cta_contact_${lang}`]}</EditableText>
               </Link>
             </div>

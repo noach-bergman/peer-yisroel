@@ -24,6 +24,8 @@ export const DEFAULT_GLOBAL_CONTENT = {
   nav_about_en: 'About',
   nav_gallery_he: 'גלריה',
   nav_gallery_en: 'Gallery',
+  nav_updates_he: 'עדכונים',
+  nav_updates_en: 'Updates',
   nav_donate_he: 'תרומות',
   nav_donate_en: 'Donate',
   nav_contact_he: 'צור קשר',

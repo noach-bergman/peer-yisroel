@@ -1,17 +1,23 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import EditableText from '../components/EditableText'
-import PageHero from '../components/PageHero'
 import PageLoading from '../components/PageLoading'
 import { PhotoGallery } from '../components/PhotoGallery'
-import { TextEffect } from '../components/ui/text-effect'
 import { useEditMode } from '../contexts/EditModeContext'
 import { useEditableTable, useGalleryCategories, usePageContent, usePageSeo } from '../hooks/useEditableContent'
 
 /* ── Film strip row ─────────────────────────────────────────── */
 function FilmStrip({ images, direction, speed = 30 }) {
-  // triple the array so the loop never shows a gap even on wide screens
+  const [reducedMotion, setReducedMotion] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setReducedMotion(mq.matches)
+    const handler = (e) => setReducedMotion(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
   const strip = [...images, ...images, ...images]
   const anim  = direction === 'left' ? 'scroll-left' : 'scroll-right'
 
@@ -24,16 +30,16 @@ function FilmStrip({ images, direction, speed = 30 }) {
       <div
         className="flex gap-3 w-max"
         style={{
-          animation: `${anim} ${speed}s linear infinite`,
+          animation: reducedMotion ? 'none' : `${anim} ${speed}s linear infinite`,
           animationPlayState: 'running',
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.animationPlayState = 'paused')}
-        onMouseLeave={(e) => (e.currentTarget.style.animationPlayState = 'running')}
+        onMouseEnter={(e) => { if (!reducedMotion) e.currentTarget.style.animationPlayState = 'paused' }}
+        onMouseLeave={(e) => { if (!reducedMotion) e.currentTarget.style.animationPlayState = 'running' }}
       >
         {strip.map((img, i) => (
           <div
             key={`${img.id}-${i}`}
-            className="flex-shrink-0 h-36 md:h-44 w-56 md:w-72 rounded-xl overflow-hidden shadow-md"
+            className="flex-shrink-0 h-28 md:h-36 w-48 md:w-60 rounded-xl overflow-hidden shadow-md"
           >
             <img
               src={img.image_url}
@@ -159,37 +165,16 @@ export default function Gallery() {
 
   return (
     <div className="overflow-x-hidden">
-      <PageHero>
-        {isEditMode ? (
-          <EditableText field={`title_${lang}`} tag="h1" className="text-4xl md:text-6xl font-bold text-white font-hebrew leading-tight mb-4 drop-shadow-lg block">
-            {content[`title_${lang}`]}
-          </EditableText>
-        ) : (
-          <TextEffect as="h1" per="word" preset="slide" className="text-4xl md:text-6xl font-bold text-white font-hebrew leading-tight mb-4 drop-shadow-lg">
-            {content[`title_${lang}`] || ''}
-          </TextEffect>
-        )}
-        <div className="w-20 h-1 bg-brand-gold mx-auto rounded-full mb-4" />
-        {isEditMode ? (
-          <EditableText field={`subtitle_${lang}`} tag="p" className="text-white/80 text-lg md:text-xl block">
-            {content[`subtitle_${lang}`]}
-          </EditableText>
-        ) : (
-          <TextEffect as="p" per="word" preset="fade" delay={0.35} className="text-white/80 text-lg md:text-xl">
-            {content[`subtitle_${lang}`] || ''}
-          </TextEffect>
-        )}
-      </PageHero>
+      <div className="h-20 md:h-24 bg-brand-primary" />
 
-      {/* ── Scrolling film strips (always visible, full-bleed) ── */}
-      {!loading && images.length >= 2 && (
-        <div className="py-8 space-y-3 bg-[#0e1825] overflow-hidden">
-          {strip1.length > 0 && <FilmStrip images={strip1.length < 4 ? images : strip1} direction="left"  speed={35} />}
-          {strip2.length > 0 && <FilmStrip images={strip2.length < 4 ? images : strip2} direction="right" speed={28} />}
+      {/* ── Top film strip ── */}
+      {!loading && images.length >= 2 && strip1.length > 0 && (
+        <div className="pt-3 pb-1 bg-[#0e1825] overflow-hidden">
+          <FilmStrip images={strip1.length < 4 ? images : strip1} direction="left" speed={35} />
         </div>
       )}
 
-      <div ref={contentRef} className="py-16">
+      <div ref={contentRef} className="py-2 bg-[#0e1825]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {loading && (
             <div className="flex justify-center py-20">
@@ -209,33 +194,30 @@ export default function Gallery() {
               {/* Showcase */}
               {activeCat === null && (
                 <>
-                  {/* Animated folder spread — replaces the old grid */}
                   {categories.length > 0 ? (
                     hasCategorizedImages ? (
-                      <>
-                        <PhotoGallery
-                          categories={categorizedCategories}
-                          images={images}
-                          animationDelay={0.12}
-                          lang={lang}
-                          onNavigate={navigate}
-                          kicker={(
-                            <EditableText field={`story_kicker_${lang}`}>
-                              {content[`story_kicker_${lang}`]}
-                            </EditableText>
-                          )}
-                          headingPrefix={(
-                            <EditableText field={`story_heading_prefix_${lang}`} className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">
-                              {content[`story_heading_prefix_${lang}`]}
-                            </EditableText>
-                          )}
-                          headingHighlight={(
-                            <EditableText field={`story_heading_highlight_${lang}`}>
-                              {content[`story_heading_highlight_${lang}`]}
-                            </EditableText>
-                          )}
-                        />
-                      </>
+                      <PhotoGallery
+                        categories={categorizedCategories}
+                        images={images}
+                        animationDelay={0}
+                        lang={lang}
+                        onNavigate={navigate}
+                        kicker={(
+                          <EditableText field={`story_kicker_${lang}`}>
+                            {content[`story_kicker_${lang}`]}
+                          </EditableText>
+                        )}
+                        headingPrefix={(
+                          <EditableText field={`story_heading_prefix_${lang}`} className="text-white">
+                            {content[`story_heading_prefix_${lang}`]}
+                          </EditableText>
+                        )}
+                        headingHighlight={(
+                          <EditableText field={`story_heading_highlight_${lang}`}>
+                            {content[`story_heading_highlight_${lang}`]}
+                          </EditableText>
+                        )}
+                      />
                     ) : (
                       <p className="text-center py-16 text-gray-400">
                         <EditableText field={`empty_${lang}`}>
@@ -261,6 +243,13 @@ export default function Gallery() {
           )}
         </div>
       </div>
+
+      {/* ── Bottom film strip ── */}
+      {!loading && images.length >= 2 && strip2.length > 0 && activeCat === null && (
+        <div className="pt-2 pb-6 bg-[#0e1825] overflow-hidden">
+          <FilmStrip images={strip2.length < 4 ? images : strip2} direction="right" speed={28} />
+        </div>
+      )}
 
       {/* Lightbox */}
       {lightbox !== null && (
