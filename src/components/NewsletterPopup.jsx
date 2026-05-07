@@ -6,7 +6,7 @@ import { useLocation } from 'react-router-dom'
 
 const LS_KEY = 'newsletter_shown'
 const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000
-const DELAY_MS = 30_000
+const DELAY_MS = 15_000
 
 function shouldShow() {
   try {
