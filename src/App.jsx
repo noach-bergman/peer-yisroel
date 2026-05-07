@@ -14,7 +14,9 @@ import About from './pages/About'
 import Gallery from './pages/Gallery'
 import Donate from './pages/Donate'
 import Contact from './pages/Contact'
+import Updates from './pages/Updates'
 import AdminLayout from './pages/admin/AdminLayout'
+import NewsletterPopup from './components/NewsletterPopup'
 
 function PublicLayout({ children }) {
   return (
@@ -31,11 +33,13 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <ScrollToTop />
+        <NewsletterPopup />
         <Routes>
           <Route path="/admin/*" element={<AdminLayout />} />
           <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
           <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
           <Route path="/gallery" element={<PublicLayout><Gallery /></PublicLayout>} />
+          <Route path="/updates" element={<PublicLayout><Updates /></PublicLayout>} />
           <Route path="/donate" element={<PublicLayout><Donate /></PublicLayout>} />
           <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
         </Routes>

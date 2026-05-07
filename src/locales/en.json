@@ -62,5 +62,20 @@
     "text": "Support the Yeshiva and help raise a generation of Torah scholars",
     "btn_donate": "Donate",
     "btn_contact": "Contact Us"
+  },
+  "newsletter": {
+    "title": "Stay Connected",
+    "subtitle": "Receive news and updates from the Yeshiva directly in your inbox",
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "email": "Email Address",
+    "submit": "Subscribe",
+    "submitting": "Sending...",
+    "success_title": "Welcome!",
+    "success_text": "You have been successfully subscribed to our newsletter",
+    "already_subscribed": "This email is already subscribed",
+    "error": "Something went wrong. Please try again.",
+    "close": "Close",
+    "no_thanks": "No thanks"
   }
 }

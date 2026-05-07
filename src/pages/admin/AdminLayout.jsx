@@ -18,6 +18,8 @@ import Login from './Login'
 import SlideshowEditor from './SlideshowEditor'
 import GalleryManager from './GalleryManager'
 import GeneralSettings from './GeneralSettings'
+import UpdatesManager from './UpdatesManager'
+import NewsletterManager from './NewsletterManager'
 
 const PAGE_COMPONENTS = {
   home:      Home,
@@ -31,6 +33,8 @@ const PAGE_COMPONENTS = {
 const STANDALONE_COMPONENTS = {
   'gallery-manager': GalleryManager,
   settings:          GeneralSettings,
+  updates:           UpdatesManager,
+  newsletter:        NewsletterManager,
 }
 
 function routeSegment(pathname) {

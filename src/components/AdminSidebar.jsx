@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { DollarSign, Film, FolderOpen, Home, Info, Image, LogOut, Mail, Settings } from 'lucide-react'
+import { DollarSign, Film, FolderOpen, Home, Info, Image, LogOut, Mail, Newspaper, Send, Settings } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 const NAV = [
@@ -17,6 +17,8 @@ const NAV = [
     group: 'Media',
     items: [
       { key: 'gallery-manager', label: 'Gallery Manager', icon: FolderOpen, path: '/admin/gallery-manager' },
+      { key: 'updates',         label: 'Updates',         icon: Newspaper,  path: '/admin/updates' },
+      { key: 'newsletter',      label: 'Newsletter',      icon: Send,       path: '/admin/newsletter' },
     ],
   },
   {
