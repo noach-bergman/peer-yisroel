@@ -40,7 +40,7 @@ export default function EditableText({
       <textarea
         ref={inputRef}
         className={sharedClass}
-        value={value}
+        value={value ?? ''}
         rows={4}
         onChange={(event) => updateField(scope, field, event.target.value)}
         onBlur={() => setEditing(false)}
@@ -49,7 +49,7 @@ export default function EditableText({
       <input
         ref={inputRef}
         className={sharedClass}
-        value={value}
+        value={value ?? ''}
         onChange={(event) => updateField(scope, field, event.target.value)}
         onBlur={() => setEditing(false)}
       />
@@ -78,7 +78,10 @@ export default function EditableText({
         ) : null)}
       </Tag>
       {missing && (
-        <span className="absolute -top-3 end-0 z-[70] rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white shadow">
+        <span
+          className="absolute -top-3 end-0 z-[70] rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white shadow cursor-pointer"
+          onClick={(event) => { event.stopPropagation(); setEditing(true) }}
+        >
           Missing
         </span>
       )}
