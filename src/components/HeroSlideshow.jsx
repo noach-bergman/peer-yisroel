@@ -10,6 +10,7 @@ export default function HeroSlideshow({ children, logo }) {
   const { data: slides, loading } = useEditableTable('hero_slideshow', { orderBy: 'order_index', ascending: true })
   const edit = useEditMode()
   const [current, setCurrent] = useState(0)
+  const [touchStartX, setTouchStartX] = useState(null)
   const fileRef = useRef(null)
   const lang = i18n.language
 
@@ -38,54 +39,74 @@ export default function HeroSlideshow({ children, logo }) {
     event.target.value = ''
   }
 
+  const handleTouchStart = (e) => setTouchStartX(e.touches[0].clientX)
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null || slides.length <= 1) return
+    const delta = touchStartX - e.changedTouches[0].clientX
+    if (Math.abs(delta) > 50) {
+      setCurrent(c => delta > 0 ? (c + 1) % slides.length : (c - 1 + slides.length) % slides.length)
+    }
+    setTouchStartX(null)
+  }
+
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden">
+    <section
+      className="relative sm:h-screen sm:flex sm:items-center sm:justify-center overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Background — always visible on desktop, also behind children on mobile */}
       <div className="absolute inset-0 bg-brand-primary" />
 
+      {/* Image slides — flow on mobile (h-[55vw] min 220px), absolute on desktop */}
       {!loading && slides.length > 0 && (
         <motion.div
           dir="ltr"
-          className="absolute inset-0 overflow-hidden"
+          className="relative sm:absolute sm:inset-0 overflow-hidden mt-20 sm:mt-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, ease: 'easeInOut' }}
         >
-            <div
-              className="flex h-full transition-transform duration-1000 ease-in-out"
-              style={{
-                width: `${slides.length * 100}%`,
-                transform: `translateX(-${current * (100 / slides.length)}%)`,
-              }}
-            >
-              {slides.map((slide, index) => (
-                <div
-                  key={slide.id}
-                  className="relative h-full flex-shrink-0 flex items-center justify-center bg-brand-primary"
-                  style={{ width: `${100 / slides.length}%` }}
-                >
-                  <img src={slide.image_url} alt={slide[`alt_${lang}`] || ''} className="w-full h-full object-cover" />
-                  <AdminItemControls
-                    label="Slide"
-                    onEdit={() => edit.openDrawer({
-                      title: 'Hero slide',
-                      kicker: 'Image',
-                      mediaTable: 'hero_slideshow',
-                      itemId: slide.id,
-                      fields: [
-                        { name: 'alt_he', label: 'Alt text HE' },
-                        { name: 'alt_en', label: 'Alt text EN' },
-                      ],
-                    })}
-                    onAdd={() => fileRef.current?.click()}
-                    onDelete={() => edit.removeMediaItem('hero_slideshow', slide.id)}
-                    onMoveUp={() => edit.moveMediaItem('hero_slideshow', slide.id, -1)}
-                    onMoveDown={() => edit.moveMediaItem('hero_slideshow', slide.id, 1)}
-                    canMoveUp={index > 0}
-                    canMoveDown={index < slides.length - 1}
-                  />
-                </div>
-              ))}
-            </div>
+          <div
+            className="flex h-[55vw] sm:h-full transition-transform duration-1000 ease-in-out"
+            style={{
+              width: `${slides.length * 100}%`,
+              transform: `translateX(-${current * (100 / slides.length)}%)`,
+            }}
+          >
+            {slides.map((slide, index) => (
+              <div
+                key={slide.id}
+                className="relative flex-shrink-0 bg-brand-primary h-[55vw] sm:h-full"
+                style={{ width: `${100 / slides.length}%` }}
+              >
+                <img
+                  src={slide.image_url}
+                  alt={slide[`alt_${lang}`] || ''}
+                  className="w-full h-full object-cover"
+                />
+                <AdminItemControls
+                  label="Slide"
+                  onEdit={() => edit.openDrawer({
+                    title: 'Hero slide',
+                    kicker: 'Image',
+                    mediaTable: 'hero_slideshow',
+                    itemId: slide.id,
+                    fields: [
+                      { name: 'alt_he', label: 'Alt text HE' },
+                      { name: 'alt_en', label: 'Alt text EN' },
+                    ],
+                  })}
+                  onAdd={() => fileRef.current?.click()}
+                  onDelete={() => edit.removeMediaItem('hero_slideshow', slide.id)}
+                  onMoveUp={() => edit.moveMediaItem('hero_slideshow', slide.id, -1)}
+                  onMoveDown={() => edit.moveMediaItem('hero_slideshow', slide.id, 1)}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < slides.length - 1}
+                />
+              </div>
+            ))}
+          </div>
         </motion.div>
       )}
 
@@ -100,9 +121,9 @@ export default function HeroSlideshow({ children, logo }) {
       )}
       <input ref={fileRef} type="file" accept="image/*" onChange={addSlide} className="hidden" />
 
-
+      {/* Logo animation — desktop only */}
       {logo && !loading && (
-        <div className="absolute inset-0 z-[5] flex items-center justify-center pointer-events-none">
+        <div className="hidden sm:flex absolute inset-0 z-[5] items-center justify-center pointer-events-none">
           <motion.img
             src={logo}
             alt=""
@@ -122,8 +143,9 @@ export default function HeroSlideshow({ children, logo }) {
         </div>
       )}
 
+      {/* Navigation dots — below image on mobile, absolute on desktop */}
       {slides.length > 1 && (
-        <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+        <div className="relative sm:absolute sm:bottom-8 z-20 flex justify-center gap-2 py-3 sm:py-0 sm:left-1/2 sm:-translate-x-1/2">
           {slides.map((_, index) => (
             <button
               key={index}
@@ -135,7 +157,8 @@ export default function HeroSlideshow({ children, logo }) {
         </div>
       )}
 
-      <div className="absolute bottom-16 inset-x-0 z-10 text-center text-white px-4">
+      {/* Children — below image on mobile, absolute on desktop */}
+      <div className="relative sm:absolute sm:bottom-16 sm:inset-x-0 z-10 text-center text-white px-4 py-6 sm:py-0">
         {children}
       </div>
     </section>

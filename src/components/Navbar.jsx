@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -28,7 +29,7 @@ export default function Navbar() {
   }, [location.pathname])
 
   if (!content) {
-    return <header className="fixed top-0 inset-x-0 z-50 h-20 bg-transparent md:h-24" />
+    return <header className="fixed top-0 inset-x-0 z-50 h-20 bg-transparent md:h-36" />
   }
 
   const toggleLang = () => {
@@ -80,13 +81,13 @@ export default function Navbar() {
   return (
     <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${headerClass}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between md:h-24">
+        <div className="flex h-20 items-center justify-between md:h-36">
           <Link to={toPath('/')} className="flex items-center">
             <img
               key={lang}
               src={lang === 'he' ? '/עברית.jpeg' : '/English.png'}
               alt={lang === 'he' ? 'פאר ישראל' : "Pe'er Yisroel"}
-              className="h-14 md:h-18 w-auto object-contain"
+              className="h-16 md:h-28 w-auto object-contain"
             />
           </Link>
 
@@ -119,19 +120,29 @@ export default function Navbar() {
         </div>
       </div>
 
-      {open && (
-        <div className="border-t border-white/10 bg-brand-primary px-4 pb-4 md:hidden">
-          {links.map((link) => (
-            <Link
-              key={link.to}
-              to={toPath(link.to)}
-              className={`my-1 block rounded-lg px-4 py-3 text-sm font-medium transition-colors ${isActive(link.to) ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}
-            >
-              <EditableText scope="global" field={link.field} inlineEditable={false}>{link.fallback}</EditableText>
-            </Link>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden border-t border-white/10 bg-brand-primary md:hidden"
+          >
+            <div className="px-4 pb-4">
+              {links.map((link) => (
+                <Link
+                  key={link.to}
+                  to={toPath(link.to)}
+                  className={`my-1 block rounded-lg px-4 py-3 text-sm font-medium transition-colors ${isActive(link.to) ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}
+                >
+                  <EditableText scope="global" field={link.field} inlineEditable={false}>{link.fallback}</EditableText>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   )
 }

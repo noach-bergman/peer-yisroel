@@ -25,48 +25,60 @@ function FlipCard({ frontColor, icon: Icon, title, text }) {
   }
 
   return (
-    <div
-      style={{ perspective: '900px', height: '280px' }}
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
-      className="w-full"
-    >
-      <motion.div
-        style={{ width: '100%', height: '100%', transformStyle: 'preserve-3d', position: 'relative' }}
-        animate={{ rotateY: flipped ? 180 : 0 }}
-        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-      >
-        {/* Front — colored, icon centered, title at bottom */}
-        <div
-          style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
-          className={`absolute inset-0 rounded-2xl shadow-lg ${frontColor} p-8 flex flex-col items-center justify-between`}
-        >
-          <div className="w-6 h-px bg-white/25" />
-          <div className="flex flex-col items-center gap-3">
-            <Icon size={44} className="text-white/65" />
-            <div className="w-6 h-px bg-brand-gold/50" />
+    <>
+      {/* Mobile — always-visible static card */}
+      <div className={`md:hidden rounded-2xl shadow-lg ${frontColor} overflow-hidden`}>
+        <div className="flex items-center gap-4 p-5">
+          <Icon size={32} className="text-white/65 shrink-0" />
+          <div>
+            <h3 className="text-base font-bold text-white leading-snug mb-1">{title}</h3>
+            {text && <p className="text-white/70 text-sm leading-relaxed">{text}</p>}
           </div>
-          <h3 className="text-lg font-bold text-white text-center leading-snug">{title}</h3>
         </div>
+      </div>
 
-        {/* Back — parchment, distinct visual language */}
-        <div
-          style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-          className="absolute inset-0 rounded-2xl shadow-lg bg-brand-neutral-50 flex flex-col overflow-hidden"
+      {/* Desktop — flip card */}
+      <div
+        style={{ perspective: '900px', height: '280px' }}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+        className="hidden md:block w-full"
+      >
+        <motion.div
+          style={{ width: '100%', height: '100%', transformStyle: 'preserve-3d', position: 'relative' }}
+          animate={{ rotateY: flipped ? 180 : 0 }}
+          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className={`h-1.5 w-full rounded-t-2xl ${frontColor}`} />
-          <div className="flex-1 px-7 py-6 flex flex-col justify-center overflow-y-auto">
-            <motion.div
-              animate={{ opacity: textVisible ? 1 : 0, y: textVisible ? 0 : 10 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-            >
-              <p className="text-[11px] font-bold text-brand-primary/40 uppercase tracking-widest mb-3">{title}</p>
-              <p className="text-brand-primary/75 text-sm leading-relaxed">{text}</p>
-            </motion.div>
+          <div
+            style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+            className={`absolute inset-0 rounded-2xl shadow-lg ${frontColor} p-8 flex flex-col items-center justify-between`}
+          >
+            <div className="w-6 h-px bg-white/25" />
+            <div className="flex flex-col items-center gap-3">
+              <Icon size={44} className="text-white/65" />
+              <div className="w-6 h-px bg-brand-gold/50" />
+            </div>
+            <h3 className="text-lg font-bold text-white text-center leading-snug">{title}</h3>
           </div>
-        </div>
-      </motion.div>
-    </div>
+
+          <div
+            style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+            className="absolute inset-0 rounded-2xl shadow-lg bg-brand-neutral-50 flex flex-col overflow-hidden"
+          >
+            <div className={`h-1.5 w-full rounded-t-2xl ${frontColor}`} />
+            <div className="flex-1 px-7 py-6 flex flex-col justify-center overflow-y-auto">
+              <motion.div
+                animate={{ opacity: textVisible ? 1 : 0, y: textVisible ? 0 : 10 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+              >
+                <p className="text-[11px] font-bold text-brand-primary/40 uppercase tracking-widest mb-3">{title}</p>
+                <p className="text-brand-primary/75 text-sm leading-relaxed">{text}</p>
+              </motion.div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </>
   )
 }
 
@@ -84,7 +96,7 @@ export default function About() {
   const { i18n } = useTranslation()
   const lang = i18n.language
   const edit = useEditMode()
-  const { content, loading } = usePageContent('about')
+  const { content, loading, updateContent } = usePageContent('about')
   usePageSeo('about', content, lang)
 
   if (loading || !content) return <PageLoading />
@@ -155,6 +167,41 @@ export default function About() {
           </div>
         </div>
       </section>
+
+      {(content[`description_${lang}`] || (edit.isEditMode && !edit.isPreviewMode)) && (
+        <section className="bg-brand-neutral-50 pt-16 md:pt-24 pb-4">
+          <div className="max-w-[68ch] mx-auto px-6">
+            <div style={{ textAlign: content.description_align || 'start' }}>
+              <EditableText
+                field={`description_${lang}`}
+                multiline
+                tag="p"
+                className="text-[1.125rem] md:text-[1.25rem] leading-[1.85] text-brand-primary/75 whitespace-pre-line block"
+              >
+                {content[`description_${lang}`]}
+              </EditableText>
+            </div>
+            {edit.isEditMode && !edit.isPreviewMode && (
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateContent('description_align', 'start')}
+                  className={`rounded px-3 py-1 text-xs font-medium border transition-colors ${(!content.description_align || content.description_align === 'start') ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-primary border-brand-primary/30 hover:bg-brand-primary/10'}`}
+                >
+                  {lang === 'he' ? 'ימין' : 'Left'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateContent('description_align', 'center')}
+                  className={`rounded px-3 py-1 text-xs font-medium border transition-colors ${content.description_align === 'center' ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-primary border-brand-primary/30 hover:bg-brand-primary/10'}`}
+                >
+                  {lang === 'he' ? 'מרכז' : 'Center'}
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="section-y bg-brand-neutral-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
