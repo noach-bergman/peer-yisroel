@@ -97,7 +97,8 @@ export default function About() {
   const { i18n } = useTranslation()
   const lang = i18n.language
   const edit = useEditMode()
-  const { content, loading, updateContent } = usePageContent('about')
+  const { content, loading } = usePageContent('about')
+  const updateContent = (field, value) => edit.updateField('page', field, value)
   usePageSeo('about', content, lang)
 
   if (loading || !content) return <PageLoading />
