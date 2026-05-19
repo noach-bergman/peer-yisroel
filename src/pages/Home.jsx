@@ -116,7 +116,7 @@ function StatItem({ stat, index, lang }) {
 
   return (
     <AnimatedSection delay={index * 0.1} variant="scaleIn" className="relative text-center">
-      <div className="text-5xl md:text-6xl font-bold text-brand-gold mb-2">
+      <div className="text-3xl sm:text-5xl md:text-6xl font-bold text-brand-gold mb-2">
         {edit.isEditMode && !edit.isPreviewMode
           ? (
             <EditableCollectionText collectionKey="stats" item={stat} field="value" tag="span">
@@ -148,7 +148,7 @@ export default function Home() {
 
   return (
     <div>
-      <div ref={heroRef} className="relative overflow-hidden">
+      <div ref={heroRef} className="relative overflow-hidden -mt-20 md:-mt-36">
         <HeroSlideshow logo="/English.png">
           <motion.div
             style={{ y: heroTextY }}
@@ -174,7 +174,7 @@ export default function Home() {
       <section className="relative bg-brand-primary section-y-tight overflow-hidden">
         <GoldParticles />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-3 gap-8">
+          <div className="grid grid-cols-3 gap-3 sm:gap-8">
             {(content.stats || []).map((stat, index) => (
               <StatItem key={stat.id} stat={stat} index={index} lang={lang} />
             ))}
