@@ -83,6 +83,13 @@ function FlipCard({ frontColor, icon: Icon, title, text }) {
   )
 }
 
+const DESCRIPTION_WIDTHS = {
+  narrow: 'max-w-[52ch]',
+  medium: 'max-w-[72ch]',
+  wide: 'max-w-[90ch]',
+  full: 'max-w-4xl',
+}
+
 const ICON_MAP = { BookOpen, Star, Heart, Globe, Users, Award }
 const FRONT_COLORS = [
   { value: 'bg-brand-primary', label: 'Blue' },
@@ -172,7 +179,7 @@ export default function About() {
 
       {((content[`description_title_${lang}`] || content[`description_${lang}`]) || (edit.isEditMode && !edit.isPreviewMode)) && (
         <section className="bg-brand-neutral-50 pt-16 md:pt-24 pb-8">
-          <div className="max-w-[72ch] mx-auto px-6">
+          <div className={`${DESCRIPTION_WIDTHS[content.description_width] || DESCRIPTION_WIDTHS.medium} mx-auto px-6`}>
             <EditableText
               field={`description_title_${lang}`}
               tag="h2"
@@ -182,15 +189,30 @@ export default function About() {
             </EditableText>
 
             {edit.isEditMode && !edit.isPreviewMode ? (
-              <RichTextEditor
-                value={content[`description_${lang}`] || ''}
-                onChange={html => updateContent(`description_${lang}`, html)}
-                dir={lang === 'he' ? 'rtl' : 'ltr'}
-                placeholder="Write the description here..."
-              />
+              <>
+                <RichTextEditor
+                  value={content[`description_${lang}`] || ''}
+                  onChange={html => updateContent(`description_${lang}`, html)}
+                  dir={lang === 'he' ? 'rtl' : 'ltr'}
+                  placeholder="Write the description here..."
+                />
+                <div className="mt-4 flex items-center gap-2">
+                  <span className="text-xs text-gray-500 font-medium">Text width:</span>
+                  {Object.entries(DESCRIPTION_WIDTHS).map(([key, cls]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => updateContent('description_width', key)}
+                      className={`rounded px-3 py-1 text-xs font-semibold capitalize transition-colors ${(content.description_width || 'medium') === key ? 'bg-brand-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    >
+                      {key}
+                    </button>
+                  ))}
+                </div>
+              </>
             ) : (
               <div
-                className="rich-text text-[1.125rem] md:text-[1.2rem] leading-[1.9] text-brand-primary/75"
+                className="rich-text text-base md:text-[1.2rem] leading-[1.9] text-brand-primary/75"
                 dir={lang === 'he' ? 'rtl' : 'ltr'}
                 dangerouslySetInnerHTML={{ __html: content[`description_${lang}`] || '' }}
               />

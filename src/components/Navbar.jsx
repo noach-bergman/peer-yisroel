@@ -89,74 +89,94 @@ export default function Navbar() {
   const mobileMenuClass = onDarkSurface ? 'text-white' : 'text-brand-primary'
 
   return (
-    <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${headerClass}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between md:h-36">
-          <Link to={toPath('/')} className="flex items-center">
-            <img
-              key={lang}
-              src={lang === 'he' ? '/עברית.jpeg' : '/English.png'}
-              alt={lang === 'he' ? 'פאר ישראל' : "Pe'er Yisroel"}
-              className="h-16 md:h-28 w-auto object-contain"
-            />
-          </Link>
+    <>
+      <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${headerClass}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-20 items-center justify-between md:h-36">
+            <Link to={toPath('/')} className="flex items-center">
+              <img
+                key={lang}
+                src={lang === 'he' ? '/עברית.jpeg' : '/English.png'}
+                alt={lang === 'he' ? 'פאר ישראל' : "Pe'er Yisroel"}
+                className="h-16 md:h-28 w-auto object-contain"
+              />
+            </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
-            {links.map((link) => (
-              <Link
-                key={link.to}
-                to={toPath(link.to)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 ${isActive(link.to) ? activeLinkClass : inactiveLinkClass}`}
-              >
-                <EditableText scope="global" field={link.field} inlineEditable={false}>{link.fallback}</EditableText>
-              </Link>
-            ))}
-            {hebrewEnabled && (
-              <button
-                onClick={toggleLang}
-                className={`ms-4 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${languageButtonClass}`}
-              >
-                {lang === 'he' ? 'EN' : 'עב'}
-              </button>
-            )}
-          </nav>
-
-          <div className="flex items-center gap-2 md:hidden">
-            {hebrewEnabled && (
-              <button onClick={toggleLang} className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${languageButtonClass}`}>
-                {lang === 'he' ? 'EN' : 'עב'}
-              </button>
-            )}
-            <button onClick={() => setOpen((value) => !value)} className={`p-2 ${mobileMenuClass}`} aria-label="Toggle menu">
-              {open ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden border-t border-white/10 bg-brand-primary md:hidden"
-          >
-            <div className="px-4 pb-4">
+            <nav className="hidden items-center gap-1 md:flex">
               {links.map((link) => (
                 <Link
                   key={link.to}
                   to={toPath(link.to)}
-                  className={`my-1 block rounded-lg px-4 py-3 text-sm font-medium transition-colors ${isActive(link.to) ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 ${isActive(link.to) ? activeLinkClass : inactiveLinkClass}`}
                 >
                   <EditableText scope="global" field={link.field} inlineEditable={false}>{link.fallback}</EditableText>
                 </Link>
               ))}
+              {hebrewEnabled && (
+                <button
+                  onClick={toggleLang}
+                  className={`ms-4 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${languageButtonClass}`}
+                >
+                  {lang === 'he' ? 'EN' : 'עב'}
+                </button>
+              )}
+            </nav>
+
+            <div className="flex items-center gap-2 md:hidden">
+              {hebrewEnabled && (
+                <button onClick={toggleLang} className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${languageButtonClass}`}>
+                  {lang === 'he' ? 'EN' : 'עב'}
+                </button>
+              )}
+              <button onClick={() => setOpen((value) => !value)} className={`p-2 ${mobileMenuClass}`} aria-label="Toggle menu">
+                {open ? <X size={24} /> : <Menu size={24} />}
+              </button>
             </div>
-          </motion.div>
+          </div>
+        </div>
+      </header>
+
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 bg-black/40 md:hidden"
+              onClick={() => setOpen(false)}
+            />
+            <motion.div
+              key="drawer"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="fixed top-0 end-0 bottom-0 z-50 w-64 bg-brand-primary shadow-2xl md:hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between px-5 h-20 border-b border-white/10">
+                <span className="text-white/60 text-xs uppercase tracking-widest font-medium">Menu</span>
+                <button onClick={() => setOpen(false)} className="p-1 text-white/70 hover:text-white" aria-label="Close menu">
+                  <X size={22} />
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto px-4 py-4">
+                {links.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={toPath(link.to)}
+                    className={`my-1 block rounded-lg px-4 py-3 text-sm font-medium transition-colors ${isActive(link.to) ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}
+                  >
+                    <EditableText scope="global" field={link.field} inlineEditable={false}>{link.fallback}</EditableText>
+                  </Link>
+                ))}
+              </nav>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
-    </header>
+    </>
   )
 }
