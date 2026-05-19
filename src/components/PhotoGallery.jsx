@@ -88,96 +88,36 @@ export const PhotoGallery = ({
   const fallbackHeadingHighlight = lang === 'he' ? 'סיפורים שלנו' : 'Stories'
 
   return (
-    <div className="mt-2 mb-2 relative">
-      <h3 className="z-20 mx-auto max-w-2xl pb-1 text-center text-2xl font-semibold text-white md:text-3xl">
+    <div ref={stageRef} className="mt-2 mb-4">
+      <h3 className="mx-auto max-w-2xl pb-4 text-center text-2xl font-semibold text-white md:text-3xl">
         {headingPrefix || fallbackHeadingPrefix}
         <span className="text-amber-400">{headingHighlight || fallbackHeadingHighlight}</span>
       </h3>
 
-      <div ref={stageRef} className="relative mb-2 h-[260px] w-full items-center justify-center lg:flex">
-        <motion.div
-          className="relative mx-auto flex w-full max-w-7xl justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isVisible ? 1 : 0 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-        >
-          <motion.div
-            className="relative flex w-full justify-center"
-            variants={containerVariants}
-            initial="hidden"
-            animate={isLoaded ? 'visible' : 'hidden'}
-          >
-            <div className="relative h-[220px] w-[220px]">
-              {[...slots].reverse().map((slot) => (
-                <motion.div
-                  key={slot.id}
-                  className="absolute left-0 top-0"
-                  style={{ zIndex: slot.zIndex }}
-                  variants={photoVariants}
-                  custom={{ x: slot.x, y: slot.y, order: slot.order }}
-                >
-                  <FolderCard
-                    width={220}
-                    height={220}
-                    src={slot.src}
-                    title={slot.title}
-                    direction={slot.direction}
-                    onClick={onNavigate ? () => onNavigate(slot.cat) : undefined}
-                  />
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </motion.div>
-      </div>
-
-      {overflowCats.length > 0 && (
-        <div className="mx-auto mt-4 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {overflowCats.map((cat) => {
-            const catImages = images.filter((img) => img.category_id === cat.id)
-            const coverItem = catImages.find((img) => img.media_type !== 'video') ?? catImages[0]
-            const coverUrl = coverItem?.image_url
-            const coverIsVideo = coverItem?.media_type === 'video'
-            const title = cat[`name_${lang}`] || cat.name_he || cat.name_en || ''
-            return (
-              <button
-                key={cat.id}
-                type="button"
+      <div className="flex flex-wrap justify-center gap-4">
+        {filledCats.map((cat, i) => {
+          const catImages = images.filter((img) => img.category_id === cat.id)
+          const cover = catImages.find((img) => img.media_type !== 'video') ?? catImages[0]
+          const direction = DIRECTIONS[i % DIRECTIONS.length]
+          return (
+            <motion.div
+              key={cat.id}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: i * 0.08 }}
+            >
+              <FolderCard
+                width={150}
+                height={150}
+                src={cover?.image_url ?? ''}
+                title={cat[`name_${lang}`] || cat.name_he || ''}
+                direction={direction}
                 onClick={onNavigate ? () => onNavigate(cat) : undefined}
-                className="group relative overflow-hidden rounded-xl bg-slate-900 text-start shadow-md transition-shadow hover:shadow-xl"
-                style={{ aspectRatio: '4 / 3' }}
-              >
-                {coverUrl && (
-                  coverIsVideo ? (
-                    <video
-                      src={coverUrl}
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      muted
-                      loop
-                      playsInline
-                      autoPlay
-                    />
-                  ) : (
-                    <img
-                      src={coverUrl}
-                      alt=""
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                  )
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                  <p className="text-lg font-bold leading-tight">{title}</p>
-                  <p className="mt-1 text-xs text-white/65">
-                    {catImages.length} {lang === 'he' ? 'פריטים' : 'items'}
-                  </p>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      )}
+              />
+            </motion.div>
+          )
+        })}
+      </div>
     </div>
   )
 }

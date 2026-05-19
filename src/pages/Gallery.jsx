@@ -132,8 +132,25 @@ export default function Gallery() {
   const [activeCat, setActiveCat] = useState(null)
   const [fading, setFading] = useState(false)
   const [lightbox, setLightbox] = useState(null)
+  const [lbTouchStart, setLbTouchStart] = useState(null)
   const contentRef = useRef(null)
   usePageSeo('gallery', content, lang)
+
+  const openLightbox = (index, imgs) => setLightbox({ images: imgs, index })
+  const closeLightbox = () => setLightbox(null)
+  const lbPrev = () => setLightbox((lb) => ({ ...lb, index: (lb.index - 1 + lb.images.length) % lb.images.length }))
+  const lbNext = () => setLightbox((lb) => ({ ...lb, index: (lb.index + 1) % lb.images.length }))
+
+  useEffect(() => {
+    if (!lightbox) return
+    const onKey = (e) => {
+      if (e.key === 'ArrowLeft') lbPrev()
+      else if (e.key === 'ArrowRight') lbNext()
+      else if (e.key === 'Escape') closeLightbox()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [lightbox])
 
   const loading = imagesLoading || categoriesLoading
   if (contentLoading || !content) return <PageLoading />
@@ -151,11 +168,6 @@ export default function Gallery() {
       }
     }, 280)
   }
-
-  const openLightbox = (index, imgs) => setLightbox({ images: imgs, index })
-  const closeLightbox = () => setLightbox(null)
-  const lbPrev = () => setLightbox((lb) => ({ ...lb, index: (lb.index - 1 + lb.images.length) % lb.images.length }))
-  const lbNext = () => setLightbox((lb) => ({ ...lb, index: (lb.index + 1) % lb.images.length }))
 
   // Two interleaved strips for visual interest
   const strip1 = images.filter((_, i) => i % 2 === 0)
@@ -253,9 +265,19 @@ export default function Gallery() {
 
       {/* Lightbox */}
       {lightbox !== null && (
-        <div className="fixed inset-0 z-[100] bg-black/93 flex items-center justify-center" onClick={closeLightbox}>
-          <button className="absolute top-4 end-4 text-white p-2 rounded-full bg-white/10 hover:bg-white/20 transition" onClick={closeLightbox}><X size={28} /></button>
-          <button className="absolute start-4 top-1/2 -translate-y-1/2 text-white p-3 rounded-full bg-white/10 hover:bg-white/20 transition" onClick={(e) => { e.stopPropagation(); lbPrev() }}><ChevronLeft size={28} /></button>
+        <div
+          className="fixed inset-0 z-[100] bg-black/93 flex items-center justify-center"
+          onClick={closeLightbox}
+          onTouchStart={(e) => setLbTouchStart(e.touches[0].clientX)}
+          onTouchEnd={(e) => {
+            if (lbTouchStart === null) return
+            const delta = lbTouchStart - e.changedTouches[0].clientX
+            if (Math.abs(delta) > 50) delta > 0 ? lbNext() : lbPrev()
+            setLbTouchStart(null)
+          }}
+        >
+          <button className="absolute top-4 end-4 text-white p-3 rounded-full bg-white/10 hover:bg-white/20 transition" onClick={closeLightbox}><X size={28} /></button>
+          <button className="absolute start-4 top-1/2 -translate-y-1/2 text-white p-4 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 transition" onClick={(e) => { e.stopPropagation(); lbPrev() }}><ChevronLeft size={28} /></button>
           <img
             src={lightbox.images[lightbox.index]?.image_url}
             alt={lightbox.images[lightbox.index]?.[`alt_${lang}`] || ''}
@@ -263,7 +285,7 @@ export default function Gallery() {
             style={{ animation: 'cinema-fade 0.3s ease' }}
             onClick={(e) => e.stopPropagation()}
           />
-          <button className="absolute end-4 top-1/2 -translate-y-1/2 text-white p-3 rounded-full bg-white/10 hover:bg-white/20 transition" onClick={(e) => { e.stopPropagation(); lbNext() }}><ChevronRight size={28} /></button>
+          <button className="absolute end-4 top-1/2 -translate-y-1/2 text-white p-4 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 transition" onClick={(e) => { e.stopPropagation(); lbNext() }}><ChevronRight size={28} /></button>
           <div className="absolute bottom-4 text-white/50 text-sm">{lightbox.index + 1} / {lightbox.images.length}</div>
         </div>
       )}

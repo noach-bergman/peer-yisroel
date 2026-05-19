@@ -3,7 +3,7 @@ import GoldParticles from './GoldParticles'
 
 export default function PageHero({ children }) {
   return (
-    <section className="relative bg-brand-primary overflow-hidden" style={{ paddingTop: '7rem', paddingBottom: '5rem' }}>
+    <section className="relative bg-brand-primary overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
       <GoldParticles />
       <div className="relative z-10 max-w-3xl mx-auto px-4 text-center">
         <motion.div
