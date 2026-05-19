@@ -168,9 +168,16 @@ export default function About() {
         </div>
       </section>
 
-      {(content[`description_${lang}`] || (edit.isEditMode && !edit.isPreviewMode)) && (
+      {((content[`description_title_${lang}`] || content[`description_${lang}`]) || (edit.isEditMode && !edit.isPreviewMode)) && (
         <section className="bg-brand-neutral-50 pt-16 md:pt-24 pb-4">
           <div className="max-w-[68ch] mx-auto px-6">
+            <EditableText
+              field={`description_title_${lang}`}
+              tag="h2"
+              className="heading-section mb-8 block"
+            >
+              {content[`description_title_${lang}`]}
+            </EditableText>
             <div style={{ textAlign: content.description_align || 'start' }}>
               <EditableText
                 field={`description_${lang}`}

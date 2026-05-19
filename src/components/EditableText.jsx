@@ -62,7 +62,7 @@ export default function EditableText({
   return (
     <Wrapper className={`relative max-w-full ${isInline ? 'inline-block' : 'block'}`}>
       <Tag
-        className={`${className} cursor-text rounded transition-all duration-200 hover:outline hover:outline-2 hover:outline-brand-gold hover:outline-offset-2 hover:shadow-[0_0_8px_rgba(184,148,63,0.4)]`}
+        className={`${className} cursor-text rounded transition-all duration-200 hover:outline hover:outline-2 hover:outline-brand-gold hover:outline-offset-2 hover:shadow-[0_0_8px_rgba(184,148,63,0.4)] ${missing && !value ? 'min-h-[2.5rem] flex items-center' : ''}`}
         title="Click to edit"
         onClick={(event) => {
           event.preventDefault()
@@ -71,7 +71,11 @@ export default function EditableText({
         }}
         {...props}
       >
-        {value}
+        {value || (missing ? (
+          <span className="text-brand-gold/70 italic text-sm font-normal border border-dashed border-brand-gold/40 rounded px-3 py-1">
+            לחץ להוספה...
+          </span>
+        ) : null)}
       </Tag>
       {missing && (
         <span className="absolute -top-3 end-0 z-[70] rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white shadow">
