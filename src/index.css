@@ -38,6 +38,7 @@
     font-family: 'Frank Ruhl Libre', serif;
     -webkit-font-smoothing: antialiased;
     background-color: #F0E6D2;
+    overflow-x: hidden;
   }
   html[dir='ltr'] body {
     font-family: 'Inter', sans-serif;
@@ -79,6 +80,18 @@
     @apply bg-white rounded-xl shadow-md p-6;
   }
 }
+
+/* Rich text rendered output */
+.rich-text p { margin-bottom: 1.2em; }
+.rich-text p:last-child { margin-bottom: 0; }
+.rich-text h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.6em; margin-top: 1.4em; color: #162A55; }
+.rich-text h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5em; margin-top: 1.2em; color: #162A55; }
+.rich-text strong { font-weight: 700; }
+.rich-text em { font-style: italic; }
+.rich-text ul { list-style: disc; padding-inline-start: 1.5em; margin-bottom: 1em; }
+.rich-text ol { list-style: decimal; padding-inline-start: 1.5em; margin-bottom: 1em; }
+.rich-text li { margin-bottom: 0.3em; }
+.rich-text hr { border: none; border-top: 1px solid #CCBA92; margin: 1.5em 0; }
 
 html[dir='ltr'] .heading-display,
 html[dir='ltr'] .heading-page,

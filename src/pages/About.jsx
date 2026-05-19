@@ -7,6 +7,7 @@ import AnimatedSection from '../components/AnimatedSection'
 import EditableText from '../components/EditableText'
 import GoldParticles from '../components/GoldParticles'
 import PageLoading from '../components/PageLoading'
+import RichTextEditor from '../components/RichTextEditor'
 import { createId } from '../content/defaultContent'
 import { useEditMode } from '../contexts/EditModeContext'
 import { usePageContent, usePageSeo } from '../hooks/useEditableContent'
@@ -169,8 +170,8 @@ export default function About() {
       </section>
 
       {((content[`description_title_${lang}`] || content[`description_${lang}`]) || (edit.isEditMode && !edit.isPreviewMode)) && (
-        <section className="bg-brand-neutral-50 pt-16 md:pt-24 pb-4">
-          <div className="max-w-[68ch] mx-auto px-6">
+        <section className="bg-brand-neutral-50 pt-16 md:pt-24 pb-8">
+          <div className="max-w-[72ch] mx-auto px-6">
             <EditableText
               field={`description_title_${lang}`}
               tag="h2"
@@ -178,33 +179,20 @@ export default function About() {
             >
               {content[`description_title_${lang}`]}
             </EditableText>
-            <div style={{ textAlign: content.description_align || 'start' }}>
-              <EditableText
-                field={`description_${lang}`}
-                multiline
-                tag="p"
-                className="text-[1.125rem] md:text-[1.25rem] leading-[1.85] text-brand-primary/75 whitespace-pre-line block"
-              >
-                {content[`description_${lang}`]}
-              </EditableText>
-            </div>
-            {edit.isEditMode && !edit.isPreviewMode && (
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => updateContent('description_align', 'start')}
-                  className={`rounded px-3 py-1 text-xs font-medium border transition-colors ${(!content.description_align || content.description_align === 'start') ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-primary border-brand-primary/30 hover:bg-brand-primary/10'}`}
-                >
-                  {lang === 'he' ? 'ימין' : 'Left'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateContent('description_align', 'center')}
-                  className={`rounded px-3 py-1 text-xs font-medium border transition-colors ${content.description_align === 'center' ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-primary border-brand-primary/30 hover:bg-brand-primary/10'}`}
-                >
-                  {lang === 'he' ? 'מרכז' : 'Center'}
-                </button>
-              </div>
+
+            {edit.isEditMode && !edit.isPreviewMode ? (
+              <RichTextEditor
+                value={content[`description_${lang}`] || ''}
+                onChange={html => updateContent(`description_${lang}`, html)}
+                dir={lang === 'he' ? 'rtl' : 'ltr'}
+                placeholder={lang === 'he' ? 'כתוב כאן את התיאור...' : 'Write the description here...'}
+              />
+            ) : (
+              <div
+                className="rich-text text-[1.125rem] md:text-[1.2rem] leading-[1.9] text-brand-primary/75"
+                dir={lang === 'he' ? 'rtl' : 'ltr'}
+                dangerouslySetInnerHTML={{ __html: content[`description_${lang}`] || '' }}
+              />
             )}
           </div>
         </section>
