@@ -96,7 +96,10 @@ export default function GeneralSettings() {
     const settingsKeys = SECTIONS.flatMap((s) => s.fields.filter((f) => f.scope === 'settings').map((f) => f.key))
 
     const globalContent   = Object.fromEntries(globalKeys.map((k) => [k, values[k] ?? '']))
-    const settingsContent = Object.fromEntries(settingsKeys.map((k) => [k, values[k] ?? '']))
+    const settingsContent = {
+      ...Object.fromEntries(settingsKeys.map((k) => [k, values[k] ?? ''])),
+      hebrew_enabled: values.hebrew_enabled !== false,
+    }
 
     const [r1, r2] = await Promise.all([
       supabase.from('site_content').upsert({ key: 'global', content: globalContent }, { onConflict: 'key' }),
@@ -159,6 +162,32 @@ export default function GeneralSettings() {
         )}
 
         <div className="space-y-8">
+          {/* Language toggle */}
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div className="border-b border-gray-100 bg-gray-50 px-5 py-3">
+              <h2 className="text-sm font-bold text-brand-primary uppercase tracking-wide">Language</h2>
+            </div>
+            <div className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Hebrew language support</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {values.hebrew_enabled !== false
+                      ? 'Visitors can switch between Hebrew and English. Site opens in the visitor\'s browser language.'
+                      : 'Site is English-only. Language toggle is hidden. Hebrew content is preserved for future use.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => set('hebrew_enabled', values.hebrew_enabled === false ? true : false)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${values.hebrew_enabled !== false ? 'bg-brand-primary' : 'bg-gray-300'}`}
+                >
+                  <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${values.hebrew_enabled !== false ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            </div>
+          </div>
+
           {SECTIONS.map((section) => (
             <div key={section.title} className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
               <div className="border-b border-gray-100 bg-gray-50 px-5 py-3">

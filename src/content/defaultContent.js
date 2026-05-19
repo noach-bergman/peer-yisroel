@@ -39,6 +39,7 @@ export const DEFAULT_GLOBAL_CONTENT = {
 }
 
 export const DEFAULT_SETTINGS = {
+  hebrew_enabled: true,
   contact_email: 'info@peeryisroel.com',
   contact_phone: '',
   contact_address_he: '',
@@ -302,6 +303,7 @@ export function normalizeSettings(row) {
   return {
     ...DEFAULT_SETTINGS,
     ...content,
+    hebrew_enabled: content.hebrew_enabled === false ? false : DEFAULT_SETTINGS.hebrew_enabled,
     contact_email: isBlankText(legacy.contact_email) ? DEFAULT_SETTINGS.contact_email : legacy.contact_email || content.contact_email || DEFAULT_SETTINGS.contact_email,
     contact_phone: isBlankText(legacy.contact_phone) ? DEFAULT_SETTINGS.contact_phone : legacy.contact_phone || content.contact_phone || DEFAULT_SETTINGS.contact_phone,
     contact_address_he: isBlankText(content.contact_address_he) ? legacy.contact_address || DEFAULT_SETTINGS.contact_address_he : content.contact_address_he || legacy.contact_address || DEFAULT_SETTINGS.contact_address_he,

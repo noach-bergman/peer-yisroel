@@ -5,17 +5,27 @@ import { useTranslation } from 'react-i18next'
 import { Menu, X } from 'lucide-react'
 import { buildAdminPathFromPublicPath } from '../content/defaultContent'
 import { useEditMode } from '../contexts/EditModeContext'
-import { useGlobalContent } from '../hooks/useEditableContent'
+import { useGlobalContent, useSettingsContent } from '../hooks/useEditableContent'
 import EditableText from './EditableText'
 
 export default function Navbar() {
   const { i18n } = useTranslation()
   const edit = useEditMode()
   const { content } = useGlobalContent()
+  const { settings } = useSettingsContent()
+  const hebrewEnabled = edit.isEditMode ? true : settings?.hebrew_enabled !== false
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const lang = i18n.language
+
+  useEffect(() => {
+    if (!hebrewEnabled && lang !== 'en') {
+      i18n.changeLanguage('en')
+      document.documentElement.dir = 'ltr'
+      document.documentElement.lang = 'en'
+    }
+  }, [hebrewEnabled, lang, i18n])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
@@ -101,18 +111,22 @@ export default function Navbar() {
                 <EditableText scope="global" field={link.field} inlineEditable={false}>{link.fallback}</EditableText>
               </Link>
             ))}
-            <button
-              onClick={toggleLang}
-              className={`ms-4 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${languageButtonClass}`}
-            >
-              {lang === 'he' ? 'EN' : 'עב'}
-            </button>
+            {hebrewEnabled && (
+              <button
+                onClick={toggleLang}
+                className={`ms-4 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${languageButtonClass}`}
+              >
+                {lang === 'he' ? 'EN' : 'עב'}
+              </button>
+            )}
           </nav>
 
           <div className="flex items-center gap-2 md:hidden">
-            <button onClick={toggleLang} className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${languageButtonClass}`}>
-              {lang === 'he' ? 'EN' : 'עב'}
-            </button>
+            {hebrewEnabled && (
+              <button onClick={toggleLang} className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${languageButtonClass}`}>
+                {lang === 'he' ? 'EN' : 'עב'}
+              </button>
+            )}
             <button onClick={() => setOpen((value) => !value)} className={`p-2 ${mobileMenuClass}`} aria-label="Toggle menu">
               {open ? <X size={24} /> : <Menu size={24} />}
             </button>
