@@ -287,7 +287,7 @@ export default function UpdatesManager() {
                     dir="rtl"
                     value={form.title_he}
                     onChange={(e) => setField('title_he', e.target.value)}
-                    placeholder="כותרת בעברית"
+                    placeholder="Hebrew title"
                     className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                   />
                 </div>
@@ -311,7 +311,7 @@ export default function UpdatesManager() {
                   rows={5}
                   value={form.body_he}
                   onChange={(e) => setField('body_he', e.target.value)}
-                  placeholder="תוכן בעברית..."
+                  placeholder="Hebrew content..."
                   className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                 />
               </div>

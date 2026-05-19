@@ -186,7 +186,7 @@ export default function About() {
                 value={content[`description_${lang}`] || ''}
                 onChange={html => updateContent(`description_${lang}`, html)}
                 dir={lang === 'he' ? 'rtl' : 'ltr'}
-                placeholder={lang === 'he' ? 'כתוב כאן את התיאור...' : 'Write the description here...'}
+                placeholder="Write the description here..."
               />
             ) : (
               <div

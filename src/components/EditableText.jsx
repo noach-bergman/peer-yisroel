@@ -73,7 +73,7 @@ export default function EditableText({
       >
         {value || (missing ? (
           <span className="text-brand-gold/70 italic text-sm font-normal border border-dashed border-brand-gold/40 rounded px-3 py-1">
-            לחץ להוספה...
+            Click to add...
           </span>
         ) : null)}
       </Tag>
